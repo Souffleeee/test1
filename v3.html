@@ -1,0 +1,4138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🐱 大猫街道 · 饰品店 & 用品店</title>
+<style>
+:root {
+  --primary: #D4956A; --primary-dark: #B87A4E; --primary-light: #F0D5B8;
+  --bg: #FFF9F2; --card: #FFFFFF; --text: #4A3728; --text-light: #8B7355;
+  --border: #E8D5C0; --accent: #F4A460; --success: #7BC47F; --danger: #E88060;
+  --gold: #F1C40F; --purple: #9B59B6; --blue: #5B9BD5;
+  --shadow: 0 2px 12px rgba(180,140,100,0.15);
+  --radius: 14px;
+  --tabbar-h: 64px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.5;
+  -webkit-user-select: none; user-select: none;
+  overflow: hidden;
+}
+button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
+img { -webkit-user-drag: none; }
+
+/* ===== Scene Base ===== */
+.scene {
+  display: none; position: fixed; inset: 0; overflow: hidden;
+}
+.scene.active { display: block; }
+.scene-bg { position: absolute; inset: 0; background-size: cover; background-position: center; background-color: #F5E6D3; opacity: 0; transition: opacity 0.6s ease; }
+.scene-bg.loaded { opacity: 1; }
+.scene-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.12) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.35) 100%);
+  pointer-events: none;
+}
+
+/* ===== App Tab Bar (底部导航) ===== */
+.app-tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 400;
+  display: flex; background: rgba(255,252,246,0.97);
+  border-top: 1px solid var(--border);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -2px 12px rgba(180,140,100,0.12);
+}
+.app-tabbar .tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 0; color: var(--text-light); font-size: 10px; font-weight: 600;
+  transition: all 0.2s;
+}
+.app-tabbar .tab .tab-ico { font-size: 20px; line-height: 1; }
+.app-tabbar .tab.active { color: var(--primary-dark); }
+.app-tabbar .tab.active .tab-ico { transform: scale(1.15); }
+.app-tabbar .tab:active { transform: scale(0.92); }
+
+/* ===== Floating Nav (悬浮功能按钮) ===== */
+.float-nav {
+  position: fixed; top: calc(120px + env(safe-area-inset-top, 0px)); left: 12px; z-index: 60;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.fn-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(74,55,40,0.72); color: white;
+  padding: 8px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+  backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+  transition: transform 0.15s;
+}
+.fn-btn:active { transform: scale(0.92); }
+.fn-btn .fn-ico { font-size: 15px; line-height: 1; }
+.fn-btn .fn-badge {
+  background: var(--danger); color: white; font-size: 9px;
+  padding: 1px 6px; border-radius: 9px; font-weight: 800; margin-left: 2px;
+}
+
+/* ===== Mall Scene (商城) ===== */
+.mall-list {
+  position: absolute; top: calc(64px + env(safe-area-inset-top, 0px)); left: 16px; right: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+}
+.mall-card {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,255,255,0.92); border-radius: 16px; padding: 14px 16px;
+  box-shadow: 0 4px 16px rgba(180,140,100,0.18); cursor: pointer;
+  transition: transform 0.2s;
+}
+.mall-card:active { transform: scale(0.97); }
+.mall-card .mc-ico {
+  width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary-light), #FFF3E2);
+  display: flex; align-items: center; justify-content: center; font-size: 26px;
+}
+.mall-card .mc-info { flex: 1; }
+.mall-card .mc-name { font-size: 16px; font-weight: 800; color: var(--text); }
+.mall-card .mc-desc { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+.mall-card .mc-arrow { font-size: 22px; color: var(--text-light); }
+.mall-tabs { position:absolute; top: calc(64px + env(safe-area-inset-top, 0px)); left:16px; right:16px; display:flex; gap:8px; }
+.mall-tab { flex:1; padding:8px 0; border-radius:24px; border:1px solid var(--border); background:rgba(255,255,255,0.92); font-size:13px; font-weight:600; color:var(--text-light); cursor:pointer; transition:all .15s; }
+.mall-tab.active { background:var(--gold); color:#fff; border-color:var(--gold); }
+.mall-panel { position:absolute; top: calc(112px + env(safe-area-inset-top, 0px)); left:16px; right:16px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); display:none; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 2px 20px; }
+.mall-panel.active { display:block; }
+.mall-gacha-hero { text-align:center; padding:16px 0 8px; }
+.mall-gacha-hero .mg-title { font-size:20px; font-weight:800; color:var(--text); }
+.mall-gacha-hero .mg-desc { font-size:12px; color:var(--text-light); margin:4px 0 14px; }
+.mall-gacha-hero .mg-btns { display:flex; gap:12px; justify-content:center; }
+.mall-gacha-preview { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:14px; }
+.mall-gacha-preview .mgp-label { width:100%; text-align:center; font-size:12px; color:var(--text-light); font-weight:600; margin-bottom:2px; }
+.mall-gacha-preview .mgp-card { width:58px; height:78px; border-radius:8px; overflow:hidden; opacity:1; border:1px solid rgba(180,140,100,0.25); box-shadow:0 2px 6px rgba(0,0,0,0.12); }
+.mall-gacha-preview .mgp-card img { width:100%; height:100%; object-fit:cover; }
+.mall-section-title { font-size:15px; font-weight:700; color:var(--text); padding:8px 0; }
+.mall-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.mall-grid-item { background:rgba(255,255,255,0.92); border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; }
+.mall-grid-item .mgi-ico { font-size:28px; }
+.mall-grid-item .mgi-name { font-size:13px; font-weight:600; color:var(--text); margin:4px 0 2px; }
+.mall-grid-item .mgi-price { font-size:11px; color:var(--text-light); margin-bottom:6px; }
+.mall-grid-item .mgi-btn { padding:4px 14px; border-radius:16px; border:none; background:var(--gold); color:#fff; font-size:12px; font-weight:600; cursor:pointer; }
+
+/* ===== Rest Break Overlay (猫咪午休) ===== */
+.rest-overlay { position:fixed; inset:0; z-index:200; background:rgba(44,24,16,0.78); display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.rest-card { background:#FFF8EF; border-radius:20px; padding:24px 28px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.3); animation:restPop .4s ease; width:min(320px, 82vw); }
+@keyframes restPop { 0%{transform:scale(0.7);opacity:0} 100%{transform:scale(1);opacity:1} }
+.rest-title { font-size:20px; font-weight:800; color:var(--text); }
+.rest-play-area { position:relative; height:110px; margin:10px 0; overflow:hidden; }
+.rest-play-area .rp-cat { position:absolute; bottom:0; width:52px; height:66px; object-fit:contain; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.25)); }
+.rest-play-area .rp-cat.rp-c0 { left:6%;  animation:rpPlay 1.2s ease-in-out infinite; animation-delay:0s; }
+.rest-play-area .rp-cat.rp-c1 { left:28%; animation:rpPlay 1.4s ease-in-out infinite; animation-delay:.2s; transform:scaleX(-1); }
+.rest-play-area .rp-cat.rp-c2 { left:50%; animation:rpPlay 1.1s ease-in-out infinite; animation-delay:.4s; }
+.rest-play-area .rp-cat.rp-c3 { left:70%; animation:rpPlay 1.5s ease-in-out infinite; animation-delay:.1s; transform:scaleX(-1); }
+.rest-play-area .rp-cat.rp-c4 { left:88%; animation:rpPlay 1.3s ease-in-out infinite; animation-delay:.3s; }
+@keyframes rpPlay {
+  0%,100% { transform:translateY(0) rotate(0deg); }
+  25% { transform:translateY(-22px) rotate(-8deg); }
+  50% { transform:translateY(-4px) rotate(6deg); }
+  75% { transform:translateY(-30px) rotate(-4deg); }
+}
+.rest-play-area .rp-toy { position:absolute; top:6px; left:50%; font-size:26px; animation:rpToy 1.6s ease-in-out infinite; }
+@keyframes rpToy { 0%,100%{transform:translateX(-50%) translateY(0) rotate(0)} 50%{transform:translateX(-50%) translateY(14px) rotate(20deg)} }
+.rest-text { font-size:13px; color:var(--text-light); }
+.rest-countdown { font-size:28px; font-weight:900; color:var(--gold); margin-top:8px; }
+.rest-badge { display:inline-block; margin-top:6px; background:rgba(233,196,106,0.25); color:#8B6914; font-size:11px; font-weight:700; padding:3px 12px; border-radius:12px; }
+.rest-skip { margin-top:14px; padding:8px 24px; border-radius:20px; border:none; background:linear-gradient(135deg,var(--gold),var(--accent)); color:#fff; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 3px 10px rgba(233,196,106,0.4); transition:transform .15s; }
+.rest-skip:active { transform:scale(0.94); }
+
+/* ===== Furniture Placement (店面装饰) ===== */
+.furniture-layer { position:absolute; inset:0; z-index:20; pointer-events:none; }
+.furniture-layer .furniture-item {
+  position:absolute; transform:translate(-50%,-50%); pointer-events:auto;
+  width:64px; height:64px; display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,0.88); border:2px solid var(--border); border-radius:14px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.18); font-size:34px; cursor:pointer;
+  transition:transform .15s, box-shadow .15s; touch-action:none;
+}
+.furniture-layer .furniture-item:active { transform:translate(-50%,-50%) scale(1.08); box-shadow:0 5px 16px rgba(0,0,0,0.25); }
+.furniture-layer .furniture-item.fi-frame { width:86px; height:66px; }
+.furniture-layer .furniture-item.fi-frame .fi-photo {
+  position:absolute; inset:5px; border-radius:8px; overflow:hidden; background:#E8DCC8;
+}
+.furniture-layer .furniture-item.fi-frame .fi-photo img { width:100%; height:100%; object-fit:cover; }
+.furniture-layer .furniture-item.fi-sign { width:76px; height:52px; font-size:22px; }
+.furniture-layer .furniture-item.fi-carpet { width:110px; height:56px; font-size:26px; }
+.furniture-layer .furniture-item.fi-painting { width:56px; height:74px; }
+.furniture-layer .furniture-item.fi-catTree { width:70px; height:80px; font-size:40px; }
+.furniture-layer .furniture-item.fi-flower { width:60px; height:60px; }
+.furniture-layer .furniture-item.moving { opacity:0.75; border-style:dashed; border-color:var(--gold); }
+.placement-hint {
+  position:absolute; left:50%; top:calc(64px + env(safe-area-inset-top, 0px)); transform:translateX(-50%);
+  z-index:60; background:rgba(74,55,40,0.92); color:#fff; padding:8px 18px; border-radius:20px;
+  font-size:13px; font-weight:600; white-space:nowrap; box-shadow:0 4px 14px rgba(0,0,0,0.3);
+  display:flex; align-items:center; gap:8px; animation:restPop .3s ease;
+}
+.placement-hint .ph-cancel { background:rgba(255,255,255,0.2); border:none; color:#fff; border-radius:12px; padding:2px 10px; font-size:12px; cursor:pointer; }
+.furniture-ghost {
+  position:fixed; z-index:210; pointer-events:none; width:64px; height:64px;
+  display:flex; align-items:center; justify-content:center; font-size:34px;
+  background:rgba(255,255,255,0.9); border:2px dashed var(--gold); border-radius:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.25); opacity:0.9;
+}
+.furniture-toolbar {
+  position:absolute; left:16px; right:16px; bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+  z-index:55; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
+}
+.furniture-toolbar .ft-btn {
+  padding:8px 16px; border-radius:20px; border:1px solid var(--border); background:rgba(255,255,255,0.94);
+  font-size:13px; font-weight:600; color:var(--text); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.12);
+}
+.furniture-toolbar .ft-btn:active { transform:scale(0.95); }
+.furniture-toolbar .ft-btn.ft-primary { background:var(--gold); color:#fff; border-color:var(--gold); }
+.furniture-toolbar .ft-btn.ft-danger { color:#C0392B; }
+.furniture-toolbar .ft-btn.ft-off { opacity:0.5; }
+
+/* ===== Task / Quest List ===== */
+.task-list, .quest-list { display: flex; flex-direction: column; gap: 10px; }
+.task-item {
+  display: flex; align-items: center; gap: 10px;
+  background: #FFF8EF; border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px; transition: all 0.2s;
+}
+.task-item.done { opacity: 0.6; background: #F3F6F0; }
+.task-item .ti-ico { font-size: 22px; flex-shrink: 0; }
+.task-item .ti-info { flex: 1; }
+.task-item .ti-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.task-item .ti-desc { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.task-item .ti-progress { font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 3px; }
+.task-item .ti-reward { font-size: 12px; font-weight: 800; color: var(--gold); flex-shrink: 0; }
+.task-item .ti-state { font-size: 12px; flex-shrink: 0; }
+.task-item .ti-state.claim { color: var(--success); font-weight: 800; }
+.task-item .ti-state.locked { color: var(--text-light); }
+.task-tip { font-size: 11px; color: var(--text-light); text-align: center; margin-top: 12px; line-height: 1.6; }
+
+/* ===== Top Bar ===== */
+.top-bar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+.shop-title {
+  background: rgba(74,55,40,0.75); color: white;
+  padding: 6px 16px; border-radius: 20px;
+  font-size: 15px; font-weight: 700; letter-spacing: 1px;
+  backdrop-filter: blur(4px);
+}
+.points-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(74,55,40,0.75); color: var(--gold);
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 14px; font-weight: 700;
+  backdrop-filter: blur(4px);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+}
+.points-pill .num { min-width: 24px; text-align: center; }
+.top-right { display: flex; align-items: center; gap: 8px; }
+.revenue-pill {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(74,55,40,0.75); color: #FFE9A8;
+  padding: 6px 12px; border-radius: 20px;
+  font-size: 13px; font-weight: 700;
+  backdrop-filter: blur(4px);
+}
+
+/* ===== Music Toggle (音乐开关) ===== */
+.music-toggle {
+  position: fixed; top: calc(96px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 58;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(74,55,40,0.8); color: white; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+
+/* ===== Gacha Float Button (抽卡悬浮按钮：两张叠放小卡) ===== */
+.gacha-float {
+  position: fixed; top: calc(150px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 57;
+  width: 62px; height: 64px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform 0.15s;
+  animation: gachaFloatPulse 2s ease-in-out infinite;
+}
+.gacha-float .gf-card {
+  position: absolute; width: 40px; height: 54px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.gacha-float .gf-back {
+  background: linear-gradient(150deg, #F4C95D, #D99A2B);
+  left: 5px; top: 3px; transform: rotate(-14deg);
+  border: 1px solid rgba(255,255,255,0.4);
+}
+.gacha-float .gf-back::after {
+  content: ''; position: absolute; inset: 4px;
+  border: 1px dashed rgba(255,255,255,0.55); border-radius: 4px;
+}
+.gacha-float .gf-front {
+  background: linear-gradient(160deg, #FFF8EC, #FFE6BC);
+  right: 5px; bottom: 3px; transform: rotate(8deg);
+  border: 1px solid rgba(180,140,100,0.4);
+}
+.gacha-float:active { transform: scale(0.92); }
+@keyframes gachaFloatPulse { 0%,100% { box-shadow: 0 4px 14px rgba(241,196,15,0.35); } 50% { box-shadow: 0 4px 24px rgba(241,196,15,0.65); } }
+.music-toggle:active { transform: scale(0.92); }
+.music-toggle.off { opacity: 0.6; }
+
+/* ===== Check-in Modal (签到浮窗，叠加在游戏画面上) ===== */
+.checkin-overlay {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+}
+.checkin-overlay.open { display: flex; }
+.checkin-card {
+  width: 88%; max-width: 340px; text-align: center;
+  background: linear-gradient(165deg, #FFF9F2, #FFEEDC);
+  border-radius: 22px; padding: 22px 18px 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  animation: checkinPop 0.4s cubic-bezier(0.34,1.4,0.64,1);
+  position: relative;
+}
+@keyframes checkinPop {
+  from { transform: scale(0.7) translateY(30px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.checkin-close {
+  position: absolute; top: 8px; right: 12px; font-size: 20px; color: var(--text-light);
+  padding: 4px; cursor: pointer;
+}
+.checkin-cat-date {
+  display: inline-block; background: rgba(74,55,40,0.8); color: #FFE9A8;
+  padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700;
+  letter-spacing: 1px; margin-bottom: 10px;
+}
+.checkin-title { font-size: 22px; font-weight: 900; color: var(--primary-dark); letter-spacing: 2px; }
+.checkin-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+.checkin-cats { display: flex; justify-content: center; gap: 6px; margin: 14px 0; }
+.checkin-cats img { width: 44px; height: 58px; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2)); animation: loginCatBounce 2.4s ease infinite; }
+.checkin-cats img:nth-child(2) { animation-delay: 0.2s; }
+.checkin-cats img:nth-child(3) { animation-delay: 0.4s; }
+.checkin-cats img:nth-child(4) { animation-delay: 0.6s; }
+.checkin-cats img:nth-child(5) { animation-delay: 0.8s; }
+@keyframes loginCatBounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.checkin-box {
+  background: rgba(255,255,255,0.92); border-radius: 16px; padding: 14px 12px;
+  box-shadow: 0 4px 16px rgba(180,140,100,0.2);
+}
+.lc-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+.lc-items { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+.lc-item {
+  flex: 1; max-width: 88px; background: #FFF6EA; border: 1px solid var(--border);
+  border-radius: 12px; padding: 8px 4px; text-align: center;
+}
+.lc-item .li-emoji { font-size: 24px; }
+.lc-item .li-name { font-size: 10px; color: var(--text-light); margin-top: 3px; }
+.lc-item .li-num { font-size: 12px; font-weight: 800; color: var(--primary-dark); }
+.checkin-box .btn-primary { width: 100%; padding: 12px; font-size: 15px; }
+.checkin-box .btn-primary:disabled { opacity: 0.6; }
+
+/* ===== Can-Opening Progress (开罐进度条) ===== */
+.can-progress {
+  position: fixed; top: calc(50px + env(safe-area-inset-top, 0px)); left: 14px; right: 14px; z-index: 45;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(74,55,40,0.72); color: white;
+  padding: 6px 12px; border-radius: 14px;
+  backdrop-filter: blur(4px);
+}
+.can-progress .cp-label { font-size: 11px; white-space: nowrap; }
+.can-progress .cp-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.25); border-radius: 6px; overflow: hidden; }
+.can-progress .cp-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--accent)); border-radius: 6px; transition: width 0.5s ease; }
+.can-progress .cp-num { font-size: 11px; font-weight: 700; color: #FFE9A8; white-space: nowrap; }
+
+/* ===== Street Scene ===== */
+.street-shops {
+  position: absolute; left: 0; right: 0; top: 30%; z-index: 20;
+  display: flex; justify-content: space-around; padding: 0 10px;
+}
+/* 营收等级进度条 */
+.revenue-level-bar {
+  position: absolute; left: 16px; right: 16px; top: calc(72px + env(safe-area-inset-top, 0px)); z-index: 25;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.88); border-radius: 18px; padding: 6px 12px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12); backdrop-filter: blur(4px);
+}
+.revenue-level-badge {
+  font-size: 12px; font-weight: 800; color: #fff; white-space: nowrap;
+  background: linear-gradient(135deg, var(--gold), var(--accent));
+  padding: 3px 10px; border-radius: 12px;
+}
+.rl-track { flex: 1; height: 8px; border-radius: 4px; background: #F0E6D8; overflow: hidden; }
+.rl-fill { height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg, var(--gold), var(--accent)); transition: width 0.5s; }
+.rl-next { font-size: 10px; color: var(--text-light); white-space: nowrap; }
+.shop-door.shop-locked { opacity: 0.55; filter: grayscale(0.9); cursor: pointer; }
+.shop-door.shop-locked .door-icon { font-size: 50px; }
+.shop-door {
+  width: 42%; text-align: center; cursor: pointer; transition: transform 0.2s;
+}
+.shop-door:active { transform: scale(0.95); }
+.shop-door .door-icon { font-size: 56px; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+.shop-door .door-label {
+  display: inline-block; margin-top: 8px; padding: 6px 16px; border-radius: 16px;
+  background: rgba(255,255,255,0.92); color: var(--text);
+  font-size: 14px; font-weight: 700; box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+.shop-door .door-sub { display: block; font-size: 10px; color: var(--text-light); font-weight: 400; margin-top: 2px; }
+.door-edit {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-top: 6px; width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(74,55,40,0.72); border: none; font-size: 13px; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: transform 0.15s;
+}
+.door-edit:active { transform: scale(0.9); }
+.title-edit {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(255,255,255,0.22); border: none; font-size: 11px; cursor: pointer;
+  vertical-align: middle; margin-left: 2px; transition: transform 0.15s;
+}
+.title-edit:active { transform: scale(0.9); }
+
+.street-cats {
+  position: absolute; left: 0; right: 0; bottom: 12%; z-index: 10;
+  display: flex; justify-content: space-around; align-items: flex-end; padding: 0 6px;
+}
+.street-cat { width: 18%; text-align: center; cursor: pointer; transition: transform 0.2s; }
+.street-cat:active { transform: scale(0.94); }
+.street-cat img { width: 100%; max-width: 80px; aspect-ratio: 3/4; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25)); }
+.street-cat .sc-name { background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; display: inline-block; margin-top: 2px; }
+
+/* ===== Cats Area (inside shop) ===== */
+.cats-area {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 62%; display: flex; align-items: flex-end; justify-content: space-around;
+  padding: 0 8px; padding-bottom: calc(96px + var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+}
+.cat-slot {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; transition: transform 0.2s;
+  width: 20%;
+}
+.cat-slot:active { transform: scale(0.94); }
+.cat-slot .cat-img-wrap { position: relative; width: 100%; max-width: 92px; aspect-ratio: 3/4; }
+.cat-slot .cat-img {
+  width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+  transition: transform 0.3s;
+}
+.cat-slot .cat-img.talk { animation: catTalk 0.5s ease; }
+.cat-slot .cat-img.dodge { animation: catDodge 0.8s ease; }
+@keyframes catTalk {
+  0%,100% { transform: translateY(0) rotate(0); }
+  30% { transform: translateY(-8px) rotate(-4deg); }
+  70% { transform: translateY(-4px) rotate(4deg); }
+}
+@keyframes catDodge {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-14px) rotate(-8deg); }
+  40% { transform: translateX(14px) rotate(8deg); }
+  60% { transform: translateX(-10px) rotate(-5deg); }
+  80% { transform: translateX(6px) rotate(3deg); }
+  100% { transform: translateX(0); }
+}
+.cat-slot .cat-name {
+  background: rgba(255,255,255,0.9); color: var(--text);
+  padding: 3px 12px; border-radius: 12px;
+  font-size: 12px; font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.cat-slot .cat-role {
+  background: rgba(74,55,40,0.7); color: white;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; backdrop-filter: blur(2px);
+}
+/* 饰品叠加层 */
+.equip-overlay { position: absolute; pointer-events: none; z-index: 5; }
+.equip-overlay img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.equip-overlay.slot-ear { top: 12%; left: 68%; width: 26%; }
+.equip-overlay.slot-ear2 { top: 12%; left: 6%; width: 26%; }
+.equip-overlay.slot-neck { top: 42%; left: 28%; width: 44%; }
+.equip-overlay.slot-paw { top: 78%; left: 30%; width: 40%; }
+.equip-overlay.slot-head { top: 2%; left: 20%; width: 60%; }
+
+/* ===== Bottom Action Bar ===== */
+.bottom-bar {
+  position: absolute; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  display: flex; gap: 10px; padding: 12px 16px;
+  background: linear-gradient(180deg, transparent, rgba(0,0,0,0.25));
+}
+.bottom-bar button {
+  flex: 1; padding: 12px 8px; border-radius: 14px;
+  font-size: 14px; font-weight: 700; color: white;
+  background: linear-gradient(135deg, var(--accent), var(--primary));
+  box-shadow: 0 4px 12px rgba(180,140,100,0.35);
+  transition: all 0.2s;
+}
+.bottom-bar button:active { transform: scale(0.96); }
+.bottom-bar button .sub { display: block; font-size: 10px; font-weight: 400; opacity: 0.85; margin-top: 2px; }
+.back-btn {
+  position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 14px; z-index: 55;
+  background: rgba(74,55,40,0.75); color: white; width: 38px; height: 38px;
+  border-radius: 50%; font-size: 18px; display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.back-btn:active { transform: scale(0.92); }
+
+/* ===== Floating Points ===== */
+.points-float {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  font-size: 30px; font-weight: 800; pointer-events: none; z-index: 200;
+  animation: floatUp 1s ease-out forwards;
+}
+.points-float.pos { color: var(--success); }
+.points-float.neg { color: var(--danger); }
+@keyframes floatUp {
+  0% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%,-120%) scale(1.3); }
+}
+
+/* ===== Modal Base ===== */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-content {
+  background: var(--card); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+  max-height: 85vh; overflow-y: auto; padding: 20px;
+  padding-bottom: calc(20px + var(--tabbar-h));
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.modal-header h3 { font-size: 18px; color: var(--text); }
+.modal-close { font-size: 24px; color: var(--text-light); padding: 4px; }
+
+/* ===== Cat Detail Modal ===== */
+.cat-detail-top { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
+.cat-img-box { position: relative; width: 110px; height: 146px; flex-shrink: 0; }
+.cat-img-box > img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
+.cat-detail-info { flex: 1; }
+.cat-detail-info .name { font-size: 20px; font-weight: 800; }
+.cat-detail-info .role { font-size: 13px; color: var(--primary); font-weight: 600; margin: 2px 0 8px; }
+.cat-detail-info .desc { font-size: 12px; color: var(--text-light); line-height: 1.6; }
+.affection-bar { margin-top: 8px; }
+.affection-bar .label { font-size: 12px; color: var(--text-light); margin-bottom: 4px; }
+.affection-bar .bar-wrap { height: 8px; background: #F0E8DE; border-radius: 8px; overflow: hidden; }
+.affection-bar .bar-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--accent), var(--primary)); transition: width 0.5s ease; }
+
+.equip-section { margin-top: 12px; }
+.equip-section .eq-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.equip-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+.equip-item {
+  flex-shrink: 0; width: 64px; text-align: center; border: 2px solid var(--border);
+  border-radius: 10px; padding: 6px 4px; cursor: pointer; background: #FFFDF8; transition: all 0.2s;
+}
+.equip-item:active { transform: scale(0.94); }
+.equip-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: #F0E8DE; }
+.equip-item .eq-name { font-size: 9px; margin-top: 3px; color: var(--text); }
+.equip-item.on { border-color: var(--gold); background: #FFF8E1; }
+.equip-item.on::after { content: '佩戴中'; display: block; font-size: 8px; color: var(--gold); font-weight: 700; }
+
+/* ===== Shop Items ===== */
+.shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.shop-item {
+  border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+  text-align: center; transition: all 0.2s; background: #FFFDF8;
+}
+.shop-item:active { transform: scale(0.96); }
+.shop-item .item-emoji { font-size: 32px; display: block; margin-bottom: 6px; }
+.shop-item .item-name { font-size: 13px; font-weight: 600; }
+.shop-item .item-price { font-size: 12px; color: var(--accent); font-weight: 700; margin-top: 4px; }
+.shop-item .item-desc { font-size: 10px; color: var(--text-light); margin-top: 2px; }
+.shop-item .owned-badge { display: inline-block; background: var(--success); color: white; font-size: 10px; padding: 1px 8px; border-radius: 8px; margin-top: 4px; }
+.shop-item .buy-btn { display: block; width: 100%; margin-top: 8px; padding: 6px; border-radius: 8px; font-size: 12px; font-weight: 600; background: linear-gradient(135deg, var(--accent), var(--primary)); color: white; }
+.shop-item .buy-btn:disabled { background: #ccc; color: #999; }
+
+/* ===== Gacha Modal ===== */
+.gacha-cost-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.gacha-cost-row button { flex: 1; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 700; color: white; background: linear-gradient(135deg, var(--accent), var(--primary)); transition: all 0.2s; }
+.gacha-cost-row button:active { transform: scale(0.95); }
+.gacha-cost-row button:disabled { background: #ccc; color: #999; }
+.gacha-cost-row .cost { display: block; font-size: 11px; font-weight: 400; opacity: 0.85; margin-top: 2px; }
+.gacha-result { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 140px; padding: 8px 0; }
+.gacha-card { width: 90px; height: 126px; perspective: 600px; cursor: pointer; }
+.gacha-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+.gacha-card.flipped .gacha-card-inner { transform: rotateY(180deg); }
+.gacha-card-front, .gacha-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.gacha-card-front { background: linear-gradient(135deg, #E8D5C0, #D4956A); border: 2px solid var(--border); box-shadow: var(--shadow); }
+.gacha-card-front::after { content: "?"; font-size: 32px; color: white; font-weight: 800; }
+.gacha-card-back { transform: rotateY(180deg); padding: 5px; border: 2px solid var(--border); box-shadow: var(--shadow); justify-content: flex-start; overflow: hidden; }
+.gacha-card-back img { width: 100%; height: 58px; object-fit: cover; border-radius: 6px 6px 0 0; background: #F0E8DE; flex-shrink: 0; }
+.gacha-card-back .c-name { font-size: 10px; font-weight: 700; margin-top: 3px; line-height: 1.35; text-align: center; max-height: 28px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-all; }
+.gacha-card-back .c-label { font-size: 8px; color: var(--text-light); line-height: 1.2; margin-top: 1px; }
+.gacha-card-back.rarity-N { border-color: #bbb; }
+.gacha-card-back.rarity-R { border-color: var(--blue); }
+.gacha-card-back.rarity-SR { border-color: var(--purple); }
+.gacha-card-back.rarity-SSR { border-color: var(--gold); box-shadow: 0 0 14px rgba(241,196,15,0.5); }
+
+/* ===== Backpack Modal ===== */
+.backpack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.bp-item { position: relative; border: 1px solid var(--border); border-radius: 10px; padding: 8px; text-align: center; cursor: pointer; transition: all 0.2s; background: #FFFDF8; }
+.bp-item:active { transform: scale(0.95); }
+.bp-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: #F0E8DE; }
+.bp-item .bp-name { font-size: 11px; font-weight: 600; margin-top: 4px; }
+.bp-item .bp-count { font-size: 10px; color: var(--text-light); }
+.bp-item .bp-desc { font-size: 9px; color: var(--text-light); margin-top: 2px; line-height: 1.3; }
+.bp-item.bp-locked { opacity: 0.55; }
+.bp-supply-emoji { font-size: 38px; padding: 6px 0 2px; }
+.bp-item.equipped { border-color: var(--gold); background: #FFF8E1; }
+.bp-item.equipped::after { content: '已佩戴'; position: absolute; top: 4px; right: 4px; background: var(--gold); color: white; font-size: 8px; padding: 1px 6px; border-radius: 6px; }
+.progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.progress-row .bar-wrap { flex: 1; height: 8px; background: #F0E8DE; border-radius: 8px; overflow: hidden; }
+.progress-row .bar-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--accent), var(--primary)); transition: width 0.5s; }
+.progress-row .text { font-size: 12px; color: var(--text-light); white-space: nowrap; }
+.album-filters { display: flex; gap: 8px; margin-bottom: 12px; }
+.album-filters button { padding: 6px 14px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); color: var(--text-light); transition: all 0.2s; }
+.album-filters button.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+/* ===== Album Modal (相册) ===== */
+.album-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.album-item { position: relative; border-radius: 14px; overflow: hidden; cursor: pointer; aspect-ratio: 4/3; box-shadow: 0 3px 10px rgba(0,0,0,0.12); transition: transform 0.2s; }
+.album-item:active { transform: scale(0.95); }
+.album-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-item .al-title { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.65)); color: white; padding: 24px 10px 8px; font-size: 12px; font-weight: 700; }
+.album-item.placeholder { border: 2px dashed var(--border); background: #FFF8EF; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: none; }
+.album-item.placeholder .plus { font-size: 44px; color: var(--text-light); line-height: 1; }
+.album-item.placeholder .al-hint { font-size: 11px; color: var(--text-light); text-align: center; padding: 0 10px; margin-top: 6px; line-height: 1.5; }
+
+/* Album view (大图 + 动画特效) */
+.album-view { display: none; position: fixed; inset: 0; z-index: 800; background: rgba(0,0,0,0.92); align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
+.album-view.open { display: flex; }
+.album-view .av-close { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.15); color: white; font-size: 16px; border: none; z-index: 5; }
+.album-view .av-photo-wrap { position: relative; width: 100%; max-width: 420px; animation: avZoom 0.55s cubic-bezier(0.34,1.56,0.64,1); }
+.album-view .av-photo { width: 100%; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); animation: avFloat 3.2s ease-in-out infinite; }
+@keyframes avZoom { 0% { transform: scale(0.3) rotate(-8deg); opacity: 0; } 60% { transform: scale(1.08) rotate(2deg); } 80% { transform: scale(0.96) rotate(-1deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes avFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-8px) rotate(0.6deg); } }
+.album-view .av-title { color: white; font-size: 18px; font-weight: 800; margin-top: 16px; animation: avTitleIn 0.6s ease 0.2s both; }
+@keyframes avTitleIn { from { opacity: 0; transform: translateY(12px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.album-view .av-desc { color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 6px; animation: avTitleIn 0.6s ease 0.35s both; }
+.album-view .av-sparkle { position: absolute; font-size: 20px; pointer-events: none; animation: avSparkle 1s ease-in-out infinite; }
+@keyframes avSparkle { 0%,100% { opacity: 0; transform: scale(0.5) rotate(0); } 50% { opacity: 1; transform: scale(1.2) rotate(20deg); } }
+.album-view .av-ribbon { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 34px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); animation: avRibbon 0.8s cubic-bezier(0.34,1.56,0.64,1) both; z-index: 3; }
+@keyframes avRibbon { 0% { transform: translateX(-50%) scale(0) rotate(-30deg); opacity: 0; } 60% { transform: translateX(-50%) scale(1.2) rotate(8deg); } 100% { transform: translateX(-50%) scale(1) rotate(0); } }
+.album-view .av-heart { position: absolute; font-size: 22px; pointer-events: none; animation: avHeartUp 2.4s ease-in-out infinite; }
+@keyframes avHeartUp { 0% { opacity: 0; transform: translateY(0) scale(0.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-70px) scale(1.2); } }
+
+/* ===== Edit Card Modal ===== */
+.edit-preview { width: 100%; aspect-ratio: 3/4; border-radius: 12px; object-fit: cover; background: #F0E8DE; margin-bottom: 14px; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12px; color: var(--text-light); margin-bottom: 4px; }
+.field input, .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: #FFFDF8; }
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--primary); }
+.field textarea { resize: vertical; min-height: 56px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+.modal-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+.modal-actions button:active { transform: scale(0.97); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-ghost { background: #F0E8DE; color: var(--text); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-upload { position: relative; overflow: hidden; }
+.btn-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* ===== Toast ===== */
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 400; background: rgba(74,55,40,0.92); color: white; padding: 10px 22px; border-radius: 24px; font-size: 14px; animation: toastIn 0.3s ease; pointer-events: none; white-space: nowrap; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ===== Confetti ===== */
+.confetti { position: fixed; width: 10px; height: 10px; z-index: 260; pointer-events: none; animation: confettiFall 2s ease-out forwards; }
+@keyframes confettiFall { 0% { opacity: 1; transform: translateY(0) rotate(0); } 100% { opacity: 0; transform: translateY(80vh) rotate(720deg); } }
+
+/* ===== Big Reveal ===== */
+.reveal-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; flex-direction: column; padding: 24px 16px; box-sizing: border-box; overflow-y: auto; }
+.reveal-overlay.open { display: flex; }
+.reveal-card { width: 220px; height: 300px; border-radius: 18px; overflow: hidden; box-shadow: 0 0 40px rgba(241,196,15,0.5); animation: revealPop 0.6s cubic-bezier(0.34,1.56,0.64,1); position: relative; flex-shrink: 0; }
+@keyframes revealPop { 0% { transform: scale(0) rotate(-15deg); opacity: 0; } 60% { transform: scale(1.15) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
+.reveal-card img { width: 100%; height: 100%; object-fit: cover; }
+.reveal-card .rarity-glow { position: absolute; inset: 0; pointer-events: none; border-radius: 18px; border: 3px solid var(--gold); animation: glowPulse 1.5s ease-in-out infinite; }
+@keyframes glowPulse { 0%,100% { box-shadow: 0 0 20px rgba(241,196,15,0.4); } 50% { box-shadow: 0 0 40px rgba(241,196,15,0.8); } }
+.reveal-name { color: white; font-size: 22px; font-weight: 800; margin-top: 16px; text-shadow: 0 2px 8px rgba(0,0,0,0.5); text-align: center; line-height: 1.3; max-width: 100%; word-break: break-all; }
+@media (max-height: 620px) {
+  .reveal-card { width: 170px; height: 232px; }
+  .reveal-name { font-size: 18px; margin-top: 10px; }
+  .reveal-quote { font-size: 13px; margin-top: 6px; }
+  .reveal-btn { margin-top: 12px; padding: 10px 32px; font-size: 14px; }
+}
+.reveal-label { color: rgba(255,255,255,0.8); font-size: 14px; margin-top: 4px; }
+.reveal-quote { color: var(--gold); font-size: 15px; font-weight: 600; margin-top: 10px; text-align: center; padding: 0 30px; line-height: 1.6; animation: quoteIn 0.8s ease 0.4s both; }
+@keyframes quoteIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.reveal-btn { margin-top: 20px; padding: 12px 40px; border-radius: 24px; background: linear-gradient(135deg, var(--gold), var(--accent)); color: white; font-size: 16px; font-weight: 700; animation: quoteIn 0.8s ease 0.8s both; }
+.reveal-btn:active { transform: scale(0.95); }
+.reveal-diamond { font-size: 80px; animation: diamondSpin 1s ease; }
+@keyframes diamondSpin { 0% { transform: scale(0) rotate(0); } 60% { transform: scale(1.3) rotate(180deg); } 100% { transform: scale(1) rotate(360deg); } }
+
+/* ===== Can Opening Event ===== */
+.can-event { display: none; position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; flex-direction: column; }
+.can-event.open { display: flex; }
+.can-event .can-title { color: white; font-size: 20px; font-weight: 800; margin-bottom: 8px; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+.can-event .can-sub { color: rgba(255,255,255,0.92); font-size: 15px; margin-bottom: 12px; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+.can-event .can-img-wrap { width: 280px; height: 400px; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 0 40px rgba(244,164,96,0.5); animation: canZoom 0.8s ease; }
+@keyframes canZoom { 0% { transform: scale(0.3); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.can-event .can-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.yami-text { position: absolute; font-size: 28px; font-weight: 900; color: var(--gold); text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 0 20px rgba(241,196,15,0.6); animation: yamiFloat 1.2s ease-in-out infinite; pointer-events: none; z-index: 610; }
+@keyframes yamiFloat { 0%,100% { transform: translateY(0) rotate(-5deg) scale(1); } 50% { transform: translateY(-20px) rotate(5deg) scale(1.15); } }
+.can-event .can-close { margin-top: 20px; padding: 12px 40px; border-radius: 24px; background: linear-gradient(135deg, var(--gold), var(--accent)); color: white; font-size: 16px; font-weight: 700; }
+.can-event .can-close:active { transform: scale(0.95); }
+
+/* ===== Kick Out Event (被赶出) ===== */
+.kick-overlay { display: none; position: fixed; inset: 0; z-index: 700; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; flex-direction: column; }
+.kick-overlay.open { display: flex; }
+.kick-overlay .kick-title { color: var(--danger); font-size: 26px; font-weight: 900; text-shadow: 0 2px 10px rgba(0,0,0,0.6); animation: kickShake 0.5s ease; }
+@keyframes kickShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+.kick-overlay .kick-sub { color: white; font-size: 16px; margin-top: 12px; }
+.kick-overlay .kick-cat { width: 160px; margin-top: 16px; animation: kickBounce 0.6s ease infinite; }
+@keyframes kickBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.kick-overlay .kick-timer { color: var(--gold); font-size: 40px; font-weight: 900; margin-top: 16px; }
+
+/* ===== Newbie Gift ===== */
+.newbie-banner {
+  position: absolute; top: calc(96px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 56;
+  background: linear-gradient(135deg, var(--gold), var(--accent)); color: white;
+  padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
+  box-shadow: 0 4px 14px rgba(241,196,15,0.4); animation: giftPulse 2s ease-in-out infinite;
+}
+@keyframes giftPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.newbie-banner:active { transform: scale(0.95); }
+
+/* ===== NPC Customer Sale Notice (右上角) ===== */
+.sale-notice {
+  position: fixed; top: calc(60px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 160;
+  max-width: 240px; background: rgba(255,255,255,0.96); border-radius: 14px;
+  padding: 10px 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  display: flex; align-items: center; gap: 10px;
+  transform: translateX(120%); transition: transform 0.45s cubic-bezier(0.34,1.3,0.64,1);
+  pointer-events: none; border-left: 4px solid var(--gold);
+}
+.sale-notice.show { transform: translateX(0); }
+.sale-notice .sn-emoji { font-size: 30px; flex-shrink: 0; }
+.sale-notice .sn-body { flex: 1; min-width: 0; }
+.sale-notice .sn-text { font-size: 12px; color: var(--text); line-height: 1.5; }
+.sale-notice .sn-gain { font-size: 13px; font-weight: 800; color: var(--success); margin-top: 2px; }
+.sale-notice .sn-close { position: absolute; top: 4px; right: 8px; font-size: 12px; color: var(--text-light); cursor: pointer; pointer-events: auto; }
+
+/* ===== Mood Bar ===== */
+.mood-bar { margin-top: 8px; }
+.mood-bar .label { font-size: 12px; color: var(--text-light); margin-bottom: 4px; }
+.mood-bar .bar-wrap { height: 8px; background: #F0E8DE; border-radius: 8px; overflow: hidden; }
+.mood-bar .bar-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #F9E79F, #F1C40F); transition: width 0.5s ease; }
+
+/* ===== Use Supply Items (猫详情页) ===== */
+.use-section { margin-top: 14px; }
+.use-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.use-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.use-item {
+  flex-shrink: 0; width: 76px; border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 4px; text-align: center; background: #FFFDF8; cursor: pointer; transition: all 0.2s;
+}
+.use-item:active { transform: scale(0.94); }
+.use-item.disabled { opacity: 0.45; pointer-events: none; }
+.use-item .ui-emoji { font-size: 26px; display: block; }
+.use-item .ui-name { font-size: 11px; font-weight: 600; margin-top: 3px; }
+.use-item .ui-count { font-size: 10px; color: var(--accent); font-weight: 700; margin-top: 2px; }
+.use-item .ui-effect { font-size: 9px; color: var(--text-light); margin-top: 1px; }
+.use-limit-tip { font-size: 11px; color: var(--text-light); margin-top: 6px; }
+
+/* ===== Achievement System ===== */
+.ach-summary { font-size: 12px; color: var(--text-light); margin-bottom: 12px; text-align: center; }
+.ach-list { max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.ach-item { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.85); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+.ach-item.done { background: #F0F8E8; border-color: var(--success); }
+.ach-ico { font-size: 26px; flex-shrink: 0; }
+.ach-info { flex: 1; min-width: 0; }
+.ach-name { font-size: 13px; font-weight: 700; }
+.ach-name .ach-reward { font-size: 11px; color: var(--gold); font-weight: 800; margin-left: 4px; }
+.ach-desc { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.ach-bar { height: 4px; background: #EEE; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.ach-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--accent)); border-radius: 2px; transition: width 0.4s ease; }
+.ach-item.done .ach-bar-fill { background: linear-gradient(90deg, var(--success), #5DAE6B); }
+.ach-prog { font-size: 10px; color: var(--text-light); margin-top: 2px; }
+.ach-toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-30px); background: linear-gradient(135deg, #FEF9E7, #FDEBD0); border: 2px solid var(--gold); border-radius: 16px; padding: 12px 20px; display: flex; align-items: center; gap: 10px; z-index: 999; box-shadow: 0 6px 24px rgba(0,0,0,0.2); opacity: 0; transition: all 0.4s ease; pointer-events: none; }
+.ach-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.ach-t-ico { font-size: 32px; }
+.ach-t-name { font-size: 15px; font-weight: 800; color: #8B6914; }
+.ach-t-desc { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+/* ===== R37: 用品动画卡片 Overlay ===== */
+.activity-overlay { position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; }
+.activity-overlay.open { display: flex; }
+.act-card {
+  width: 272px; background: linear-gradient(165deg, #FFF9F0, #FFEEDD);
+  border-radius: 22px; padding: 18px 16px 16px; text-align: center;
+  box-shadow: 0 12px 44px rgba(0,0,0,0.35); animation: actPop 0.35s ease;
+}
+@keyframes actPop { 0% { transform: scale(0.6) translateY(30px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+.act-stage { position: relative; width: 150px; height: 168px; margin: 0 auto; }
+.act-cat { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22)); }
+.act-cat.eat { animation: actEat 0.9s ease-in-out infinite; }
+.act-cat.play { animation: actPlay 0.7s ease-in-out infinite; }
+.act-cat.rest { animation: actRest 3s ease-in-out infinite; }
+@keyframes actEat {
+  0%,100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-4px) rotate(-3deg); }
+  50% { transform: translateY(0) rotate(0); }
+  75% { transform: translateY(-2px) rotate(3deg); }
+}
+@keyframes actPlay {
+  0%,100% { transform: translateY(0) rotate(0) scale(1); }
+  30% { transform: translateY(-14px) rotate(-6deg) scale(1.05); }
+  60% { transform: translateY(-4px) rotate(5deg) scale(1.02); }
+}
+@keyframes actRest {
+  0%,100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(3px) rotate(2deg); }
+}
+.act-emoji { position: absolute; font-size: 26px; animation: actFloat 1.4s ease-in-out infinite; }
+.act-emoji.eat { top: 8px; right: 6px; }
+.act-emoji.play { top: 4px; left: 4px; animation: actSpin 1.1s linear infinite; }
+.act-emoji.rest { top: 6px; right: 8px; }
+@keyframes actFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes actSpin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+.act-zzz { position: absolute; top: 4px; left: 10px; font-size: 16px; color: #9BB8D3; font-weight: 800; animation: actZzz 1.6s ease-in-out infinite; }
+@keyframes actZzz { 0% { opacity: 0; transform: translateY(6px) scale(0.7); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px) scale(1.2); } }
+.act-label { font-size: 14px; font-weight: 800; color: var(--text); margin-top: 10px; }
+.act-text { min-height: 40px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.85); border-radius: 12px; padding: 8px 10px; margin-top: 8px; display: flex; align-items: center; justify-content: center; animation: actTextIn 0.3s ease; }
+@keyframes actTextIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.act-close { margin-top: 12px; padding: 8px 26px; border: none; border-radius: 18px; background: linear-gradient(135deg, var(--accent), var(--primary)); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+.act-close:active { transform: scale(0.94); }
+
+/* ===== Backpack inventory count ===== */
+.inv-count { font-size: 10px; color: var(--accent); font-weight: 700; }
+
+/* ===== Freeze overlay ===== */
+.freeze-overlay { display: none; position: fixed; inset: 0; z-index: 750; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; }
+.freeze-overlay.open { display: flex; }
+.freeze-overlay .freeze-text { color: white; font-size: 20px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+
+/* ===== Ledger Modal (账本) ===== */
+.revenue-pill { cursor: pointer; }
+.revenue-pill:active { transform: scale(0.94); }
+.ledger-today {
+  background: linear-gradient(135deg, #FFF3E2, #FFE9D0);
+  border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 16px;
+}
+.ledger-today-title { font-size: 13px; font-weight: 800; color: var(--primary-dark); margin-bottom: 10px; }
+.ledger-stats { display: flex; gap: 8px; }
+.ledger-stat {
+  flex: 1; background: rgba(255,255,255,0.85); border-radius: 12px;
+  padding: 10px 6px; text-align: center;
+}
+.ledger-stat .ls-num { font-size: 20px; font-weight: 900; color: var(--primary-dark); }
+
+/* ===== Currency Info Modal (货币获取途径说明) ===== */
+.currency-info-body { padding: 8px 4px; font-size: 14px; line-height: 1.8; color: var(--text); }
+.currency-info-body .ci-emoji { font-size: 40px; text-align: center; margin-bottom: 10px; }
+.currency-info-body .ci-desc { text-align: center; color: var(--text-light); margin-bottom: 12px; }
+.currency-info-body .ci-ways { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+.currency-info-body .ci-ways .ci-way { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+.currency-info-body .ci-way .ci-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+.ledger-stat .ls-label { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.ledger-total { margin-top: 10px; font-size: 13px; color: var(--text); text-align: right; }
+.ledger-total span { font-weight: 800; color: var(--gold); }
+.ledger-history-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.ledger-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.ledger-row .lr-date { font-weight: 700; color: var(--text); }
+.ledger-row .lr-mid { color: var(--text-light); font-size: 12px; }
+.ledger-row .lr-rev { font-weight: 800; color: var(--success); }
+
+/* ===== Welcome Back Modal (离线收益) ===== */
+.wb-body { text-align: center; padding: 10px 0 18px; }
+.wb-cat { font-size: 52px; animation: wbBounce 1.2s ease infinite; }
+@keyframes wbBounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.wb-text { font-size: 14px; color: var(--text); margin-top: 10px; line-height: 1.6; }
+.wb-gain { font-size: 20px; font-weight: 900; color: var(--gold); margin-top: 8px; }
+
+/* ===== Daily Settlement Report (昨日结算) ===== */
+.settle-report { text-align: center; padding: 6px 0 16px; }
+.sr-date { font-size: 15px; font-weight: 800; color: var(--primary-dark); margin-bottom: 14px; }
+.sr-note { font-size: 12px; color: var(--text-light); margin-top: 14px; line-height: 1.6; }
+
+@media (min-width: 600px) {
+  .modal-content { border-radius: 20px; margin-bottom: 8vh; max-width: 420px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Floating Nav (悬浮功能按钮) ===== -->
+<div class="float-nav" id="floatNav">
+  <button class="fn-btn" data-action="ledger"><span class="fn-ico">📒</span>账本</button>
+  <button class="fn-btn" data-action="daily"><span class="fn-ico">✅</span>任务</button>
+  <button class="fn-btn" data-action="newbie" id="fnNewbie"><span class="fn-ico">🎁</span>礼包<span class="fn-badge" id="fnNewbieBadge">!</span></button>
+  <button class="fn-btn" data-action="sidequest"><span class="fn-ico">🗺️</span>支线</button>
+  <button class="fn-btn" data-action="achievement"><span class="fn-ico">🏆</span>成就</button>
+</div>
+
+<!-- ===== Music Toggle ===== -->
+<button class="music-toggle" id="musicToggle" title="背景音乐">🎵</button>
+
+<!-- ===== Gacha Float Button (抽卡悬浮按钮) ===== -->
+<button class="gacha-float" id="gachaFloat" title="抽饰品">
+  <span class="gf-card gf-back"></span>
+  <span class="gf-card gf-front">🎴</span>
+</button>
+
+<!-- ===== Check-in Modal (签到浮窗) ===== -->
+<div class="checkin-overlay" id="checkinOverlay">
+  <div class="checkin-card">
+    <span class="checkin-close" id="checkinClose">✕</span>
+    <div class="checkin-cat-date" id="checkinCatDate">猫历八月十五</div>
+    <div class="checkin-title">🎉 今日签到</div>
+    <div class="checkin-sub">五猫等你来玩～</div>
+    <div class="checkin-cats" id="checkinCats"></div>
+    <div class="checkin-box" id="checkinBox">
+      <div class="lc-title" id="checkinTitle">签到领礼包</div>
+      <div class="lc-items" id="checkinItems"></div>
+      <button class="btn-primary" id="btnCheckin">签到领礼包 🎁</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Can-Opening Progress ===== -->
+<div class="can-progress" id="canProgress">
+  <span class="cp-label">🍱 开罐进度</span>
+  <div class="cp-bar"><div class="cp-fill" id="canProgressFill" style="width:0%"></div></div>
+  <span class="cp-num" id="canProgressNum">0/500</span>
+</div>
+
+<!-- ===== App Tab Bar (底部导航) ===== -->
+<nav class="app-tabbar" id="appTabbar">
+  <button class="tab active" data-tab="street"><span class="tab-ico">🏘️</span>小猫街道</button>
+  <button class="tab" data-tab="mall"><span class="tab-ico">🛍️</span>商城</button>
+  <button class="tab" data-tab="backpack"><span class="tab-ico">🎒</span>背包</button>
+  <button class="tab" data-tab="album"><span class="tab-ico">📸</span>相册</button>
+</nav>
+
+<!-- ===== Street Scene ===== -->
+<div class="scene active" id="streetScene">
+  <div class="scene-bg" style="background-image:url('assets/street-bg.webp')"></div>
+  <div class="top-bar">
+    <div class="shop-title">🐱 大猫街道</div>
+    <div class="top-right">
+      <div class="revenue-pill">💰 <span id="headerRevenueStreet">0</span></div>
+      <div class="points-pill">🪙 <span class="num" id="headerCoinsStreet">100</span></div>
+      <div class="points-pill">💎 <span class="num" id="headerPointsStreet">200</span></div>
+    </div>
+  </div>
+  <button class="newbie-banner" id="btnNewbie">🎁 新手礼包</button>
+  <div class="revenue-level-bar" id="revenueLevelBar">
+    <span class="revenue-level-badge">Lv.1 新店</span>
+    <div class="rl-track"><div class="rl-fill" id="revenueLevelProgress"></div></div>
+    <span class="rl-next" id="revenueLevelNext"></span>
+  </div>
+  <div class="street-shops" id="streetShops">
+    <div class="shop-door" id="doorSupply">
+      <span class="door-icon">🐟</span>
+      <span class="door-label"><span id="streetSupplyName">猫猫用品店</span><span class="door-sub">鱼干·玩具·猫窝</span></span>
+      <button class="door-edit" data-shop="supply" title="修改店名">✏️</button>
+    </div>
+    <div class="shop-door" id="doorAccessory">
+      <span class="door-icon">💎</span>
+      <span class="door-label"><span id="streetAccessoryName">大猫饰品店</span><span class="door-sub">串珠·抽卡·猫咪</span></span>
+      <button class="door-edit" data-shop="accessory" title="修改店名">✏️</button>
+    </div>
+    <div class="shop-door shop-locked" id="doorBakery" style="display:none">
+      <span class="door-icon">🥐</span>
+      <span class="door-label"><span>面包店</span><span class="door-sub">面包·甜品</span></span>
+    </div>
+    <div class="shop-door shop-locked" id="doorCafe" style="display:none">
+      <span class="door-icon">☕</span>
+      <span class="door-label"><span>咖啡店</span><span class="door-sub">咖啡·饮品</span></span>
+    </div>
+  </div>
+  <div class="street-cats" id="streetCats"></div>
+  <div class="furniture-layer" id="furnitureLayerStreet"></div>
+  <div class="furniture-toolbar" id="furnitureToolbarStreet" style="display:none"></div>
+</div>
+
+<!-- ===== Supply Shop Scene ===== -->
+<div class="scene" id="supplyScene">
+  <div class="scene-bg" style="background-image:url('assets/supplyshop-bg.webp')"></div>
+  <button class="back-btn" id="btnBackSupply">←</button>
+  <div class="top-bar">
+    <div class="shop-title">🐟 <span id="supplyTitleName">猫猫用品店</span> <button class="title-edit" data-shop="supply" title="修改店名">✏️</button></div>
+    <div class="top-right">
+      <div class="revenue-pill">💰 <span id="headerRevenueSupply">0</span></div>
+      <div class="points-pill">🪙 <span class="num" id="headerCoinsSupply">100</span></div>
+      <div class="points-pill">💎 <span class="num" id="headerPointsSupply">200</span></div>
+    </div>
+  </div>
+  <div class="cats-area" id="catsAreaSupply"></div>
+  <div class="furniture-layer" id="furnitureLayerSupply"></div>
+  <div class="bottom-bar">
+    <button id="btnOpenSupplyShop">🛍️ 购买用品<br><span class="sub">鱼干·玩具·猫窝</span></button>
+    <button id="btnUseSupply">🎁 使用用品<br><span class="sub">点击猫猫喂食玩耍</span></button>
+    <button id="btnExpandSupply">🏗️ 扩建<br><span class="sub">提升客单价</span></button>
+  </div>
+</div>
+
+<!-- ===== Accessory Shop Scene ===== -->
+<div class="scene" id="accessoryScene">
+  <div class="scene-bg" style="background-image:url('assets/store-bg.webp')"></div>
+  <button class="back-btn" id="btnBackAccessory">←</button>
+  <div class="top-bar">
+    <div class="shop-title">💎 <span id="accessoryTitleName">大猫饰品店</span> <button class="title-edit" data-shop="accessory" title="修改店名">✏️</button></div>
+    <div class="top-right">
+      <div class="revenue-pill">💰 <span id="headerRevenueAccessory">0</span></div>
+      <div class="points-pill">🪙 <span class="num" id="headerCoinsAccessory">100</span></div>
+      <div class="points-pill">💎 <span class="num" id="headerPointsAccessory">200</span></div>
+    </div>
+  </div>
+  <div class="cats-area" id="catsArea"></div>
+  <div class="furniture-layer" id="furnitureLayerAccessory"></div>
+  <div class="bottom-bar">
+    <button id="btnGacha">🎴 抽饰品<br><span class="sub">消耗钻石</span></button>
+    <button id="btnBackpack">🎒 背包<br><span class="sub">查看饰品</span></button>
+    <button id="btnShop">🛍️ 补给店<br><span class="sub">购买补给</span></button>
+    <button id="btnExpandAccessory">🏗️ 扩建<br><span class="sub">提升客单价</span></button>
+  </div>
+</div>
+
+<!-- ===== Bakery Scene (面包店) ===== -->
+<div class="scene" id="bakeryScene">
+  <div class="scene-bg" style="background-image:url('assets/supplyshop-bg.webp')"></div>
+  <button class="back-btn" id="btnBackBakery">←</button>
+  <div class="top-bar">
+    <div class="shop-title">🥐 面包店</div>
+    <div class="top-right">
+      <div class="revenue-pill">💰 <span id="headerRevenueBakery">0</span></div>
+      <div class="points-pill">🪙 <span class="num" id="headerCoinsBakery">100</span></div>
+      <div class="points-pill">💎 <span class="num" id="headerPointsBakery">200</span></div>
+    </div>
+  </div>
+  <div class="cats-area" id="catsAreaBakery"></div>
+  <div class="furniture-layer" id="furnitureLayerBakery"></div>
+  <div class="bottom-bar">
+    <button id="btnOpenBakeryShop">🥐 购买面包<br><span class="sub">面包·甜品</span></button>
+    <button id="btnUseBakery">🍞 制作甜品<br><span class="sub">点击猫猫喂食</span></button>
+    <button id="btnExpandBakery">🏗️ 扩建<br><span class="sub">提升客单价</span></button>
+  </div>
+</div>
+
+<!-- ===== Cafe Scene (咖啡店) ===== -->
+<div class="scene" id="cafeScene">
+  <div class="scene-bg" style="background-image:url('assets/store-bg.webp')"></div>
+  <button class="back-btn" id="btnBackCafe">←</button>
+  <div class="top-bar">
+    <div class="shop-title">☕ 咖啡店</div>
+    <div class="top-right">
+      <div class="revenue-pill">💰 <span id="headerRevenueCafe">0</span></div>
+      <div class="points-pill">🪙 <span class="num" id="headerCoinsCafe">100</span></div>
+      <div class="points-pill">💎 <span class="num" id="headerPointsCafe">200</span></div>
+    </div>
+  </div>
+  <div class="cats-area" id="catsAreaCafe"></div>
+  <div class="furniture-layer" id="furnitureLayerCafe"></div>
+  <div class="bottom-bar">
+    <button id="btnOpenCafeShop">☕ 购买咖啡<br><span class="sub">咖啡·饮品</span></button>
+    <button id="btnUseCafe">🍰 制作饮品<br><span class="sub">点击猫猫喂食</span></button>
+    <button id="btnExpandCafe">🏗️ 扩建<br><span class="sub">提升客单价</span></button>
+  </div>
+</div>
+
+<!-- ===== Mall Scene (商城：面向用户) ===== -->
+<div class="scene" id="mallScene">
+  <div class="scene-bg" style="background-image:url('assets/street-bg.webp')"></div>
+  <div class="top-bar">
+    <div class="shop-title">🛍️ 五猫商城</div>
+    <div class="top-right">
+      <div class="revenue-pill">💰 <span id="headerRevenueMall">0</span></div>
+      <div class="points-pill">🪙 <span class="num" id="headerCoinsMall">100</span></div>
+      <div class="points-pill">💎 <span class="num" id="headerPointsMall">200</span></div>
+    </div>
+  </div>
+  <div class="mall-tabs">
+    <button class="mall-tab active" data-mtab="gacha">🎴 抽卡</button>
+    <button class="mall-tab" data-mtab="supplies">🛍️ 猫用品</button>
+    <button class="mall-tab" data-mtab="furniture">🪑 家具</button>
+  </div>
+  <div class="mall-panel active" id="mallPanelGacha">
+    <div class="mall-gacha-hero">
+      <div class="mg-title">🎴 饰品抽选</div>
+      <div class="mg-desc">16 人格 + 12 星座 · 手绘风饰品</div>
+      <div class="mg-btns">
+        <button class="btn-primary" id="mallGachaSingle">单抽 · 20💎</button>
+        <button class="btn-primary" id="mallGachaMulti">十连 · 180💎</button>
+      </div>
+    </div>
+    <div class="mall-gacha-preview" id="mallGachaPreview"></div>
+  </div>
+  <div class="mall-panel" id="mallPanelSupplies">
+    <div class="mall-section-title">🛍️ 猫用品商店</div>
+    <div class="mall-grid" id="mallSuppliesGrid"></div>
+  </div>
+  <div class="mall-panel" id="mallPanelFurniture">
+    <div class="mall-section-title">🪑 店面装饰家具</div>
+    <div class="mall-grid" id="mallFurnitureGrid"></div>
+    <button class="btn-primary" id="mallGoPlace" style="width:100%;margin-top:12px">🏠 去店里摆放家具</button>
+  </div>
+</div>
+
+<!-- ===== Cat Detail Modal ===== -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="catModalTitle">猫咪详情</h3>
+      <button class="modal-close" id="catModalClose">✕</button>
+    </div>
+    <div class="cat-detail-top">
+      <div class="cat-img-box" id="catImgBox">
+        <img id="catModalImg" src="" alt="猫咪">
+      </div>
+      <div class="cat-detail-info">
+        <div class="name" id="catModalName"></div>
+        <div class="role" id="catModalRole"></div>
+        <div class="desc" id="catModalDesc"></div>
+        <div class="mood-bar">
+          <div class="label">😊 心情值 <span id="catModalMoodNum" style="font-weight:700;color:var(--gold)">80</span></div>
+          <div class="bar-wrap"><div class="bar-fill" id="catModalMood" style="width:80%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="equip-section">
+      <div class="eq-title">💍 佩戴饰品（点击切换 · 最多3件）</div>
+      <div class="equip-list" id="equipList"></div>
+    </div>
+    <div class="use-section">
+      <div class="use-title">🎁 使用用品（让猫猫开心）</div>
+      <div class="use-list" id="useList"></div>
+      <div class="use-limit-tip" id="useLimitTip"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="btnPetCat">🖐️ 摸摸头</button>
+      <button class="btn-primary" id="btnTalkCat">💬 聊天</button>
+      <button class="btn-ghost" id="btnCloseCat">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== R37: 用品动画卡片 Overlay ===== -->
+<div class="activity-overlay" id="activityOverlay">
+  <div class="act-card">
+    <div class="act-stage">
+      <img class="act-cat" id="actCatImg" src="" alt="猫猫">
+      <div class="act-emoji" id="actEmoji">🍽️</div>
+      <div class="act-zzz" id="actZzz">z</div>
+    </div>
+    <div class="act-label" id="actLabel">阿黄 · 进食</div>
+    <div class="act-text" id="actText"></div>
+    <button class="act-close" id="actClose">太可爱了 ✨</button>
+  </div>
+</div>
+
+<!-- ===== Supply Shop Modal ===== -->
+<div class="modal-overlay" id="supplyShopModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🐟 猫猫用品店</h3>
+      <button class="modal-close" id="supplyShopModalClose">✕</button>
+    </div>
+    <div class="shop-grid" id="supplyGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Bakery Shop Modal ===== -->
+<div class="modal-overlay" id="bakeryShopModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🥐 面包店</h3>
+      <button class="modal-close" id="bakeryShopModalClose">✕</button>
+    </div>
+    <div class="shop-grid" id="bakeryGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Cafe Shop Modal ===== -->
+<div class="modal-overlay" id="cafeShopModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>☕ 咖啡店</h3>
+      <button class="modal-close" id="cafeShopModalClose">✕</button>
+    </div>
+    <div class="shop-grid" id="cafeGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Accessory Shop Modal ===== -->
+<div class="modal-overlay" id="shopModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🛍️ 大猫补给店</h3>
+      <button class="modal-close" id="shopModalClose">✕</button>
+    </div>
+    <div class="shop-grid" id="shopGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Gacha Modal ===== -->
+<div class="modal-overlay" id="gachaModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🎴 串珠饰品抽选</h3>
+      <button class="modal-close" id="gachaModalClose">✕</button>
+    </div>
+    <div class="gacha-cost-row">
+      <button id="btnGachaSingle">单抽<span class="cost">-20💎</span></button>
+      <button id="btnGachaMulti">十连<span class="cost">-180💎 保底SR</span></button>
+    </div>
+    <div class="gacha-result" id="gachaResult">
+      <div style="color:var(--text-light);font-size:13px;padding:30px 0">点击上方按钮开始抽卡</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Backpack Modal ===== -->
+<div class="modal-overlay" id="backpackModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🎒 我的背包</h3>
+      <button class="modal-close" id="backpackModalClose">✕</button>
+    </div>
+    <div class="progress-row">
+      <div class="bar-wrap"><div class="bar-fill" id="albumProgress" style="width:0%"></div></div>
+      <span class="text" id="albumProgressText">0/28</span>
+    </div>
+    <div class="album-filters">
+      <button class="active" data-filter="all">全部</button>
+      <button data-filter="mbti">MBTI</button>
+      <button data-filter="constellation">星座</button>
+      <button data-filter="supplies">猫用品</button>
+    </div>
+    <div class="backpack-grid" id="backpackGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Album Modal (相册) ===== -->
+<div class="modal-overlay" id="albumModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>📸 大猫相册</h3>
+      <button class="modal-close" id="albumModalClose">✕</button>
+    </div>
+    <div class="album-grid" id="albumGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Album Photo View (相册大图) ===== -->
+<div class="album-view" id="albumView">
+  <button class="av-close" id="albumViewClose">✕</button>
+  <div class="av-photo-wrap">
+    <div class="av-ribbon">🎀</div>
+    <img class="av-photo" id="albumViewImg" src="" alt="">
+  </div>
+  <div class="av-title" id="albumViewTitle"></div>
+  <div class="av-desc" id="albumViewDesc"></div>
+</div>
+
+<!-- ===== Edit Card Modal ===== -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="editTitle">编辑饰品</h3>
+      <button class="modal-close" id="editModalClose">✕</button>
+    </div>
+    <img class="edit-preview" id="editPreview" src="" alt="饰品预览">
+    <div class="field"><label>饰品名称</label><input type="text" id="editName" maxlength="20"></div>
+    <div class="field"><label>标签/副标题</label><input type="text" id="editLabel" maxlength="30"></div>
+    <div class="field"><label>治愈文案</label><textarea id="editDesc" maxlength="100" rows="3"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-primary btn-upload">📷 上传图片<input type="file" accept="image/png,image/jpeg,image/webp" id="fileInput"></button>
+      <button class="btn-ghost" id="btnResetCard">恢复默认</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="btnSaveCard">💾 保存</button>
+      <button class="btn-ghost" id="btnCancelEdit">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Big Reveal Overlay ===== -->
+<div class="reveal-overlay" id="revealOverlay">
+  <div class="reveal-card" id="revealCard">
+    <img id="revealImg" src="" alt="饰品">
+    <div class="rarity-glow"></div>
+  </div>
+  <div class="reveal-name" id="revealName"></div>
+  <div class="reveal-label" id="revealLabel"></div>
+  <div class="reveal-quote" id="revealQuote"></div>
+  <button class="reveal-btn" id="revealBtn">收进背包 🎒</button>
+</div>
+
+<!-- ===== NPC Customer Sale Notice ===== -->
+<div class="sale-notice" id="saleNotice">
+  <span class="sn-emoji" id="snEmoji">👩</span>
+  <div class="sn-body">
+    <div class="sn-text" id="snText"></div>
+    <div class="sn-gain" id="snGain"></div>
+  </div>
+  <span class="sn-close" id="snClose">✕</span>
+</div>
+
+<!-- ===== Can Opening Event ===== -->
+<div class="can-event" id="canEvent">
+  <div class="can-title" id="canTitle">🍱 开罐头时间到！</div>
+  <div class="can-sub" id="canSubTitle">奖励员工们开罐罐啦！</div>
+  <div class="can-img-wrap">
+    <img src="assets/cats-eating.webp" alt="五猫吃饭">
+  </div>
+  <button class="can-close" id="canClose">太治愈了 ✨</button>
+</div>
+
+<!-- ===== Kick Out Event ===== -->
+<div class="kick-overlay" id="kickOverlay">
+  <div class="kick-title">😾 保安生气啦！</div>
+  <img class="kick-cat" src="assets/cat-tudou-t.webp" alt="土豆">
+  <div class="kick-sub">土豆：摸够了没有！给我出去！</div>
+  <div class="kick-timer" id="kickTimer">20</div>
+  <div class="kick-sub">被移出门店，冻结中...</div>
+</div>
+
+<!-- ===== Freeze Overlay ===== -->
+<div class="freeze-overlay" id="freezeOverlay">
+  <div class="freeze-text">⏳ 被保安赶出店外，请稍等...</div>
+</div>
+
+<!-- ===== Ledger Modal (账本) ===== -->
+<div class="modal-overlay" id="ledgerModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>📒 店铺账本</h3>
+      <button class="modal-close" id="ledgerModalClose">✕</button>
+    </div>
+    <div class="ledger-today">
+      <div class="ledger-today-title">今日经营</div>
+      <div class="ledger-stats">
+        <div class="ledger-stat"><div class="ls-num" id="ledgerTodayCustomers">0</div><div class="ls-label">进店客人</div></div>
+        <div class="ledger-stat"><div class="ls-num" id="ledgerTodaySales">0</div><div class="ls-label">售出商品</div></div>
+        <div class="ledger-stat"><div class="ls-num" id="ledgerTodayRevenue">0</div><div class="ls-label">今日营收</div></div>
+      </div>
+      <div class="ledger-total">累计营收 <span id="ledgerTotalRevenue">0</span> 🪙</div>
+    </div>
+    <div class="ledger-history">
+      <div class="ledger-history-title">历史结算</div>
+      <div id="ledgerHistoryList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Currency Info Modal (货币获取途径说明) ===== -->
+<div class="modal-overlay" id="currencyInfoModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="currencyInfoTitle">💎 钻石</h3>
+      <button class="modal-close" id="currencyInfoClose">✕</button>
+    </div>
+    <div class="currency-info-body" id="currencyInfoBody"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="currencyInfoOk">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Achievement Modal (成就) ===== -->
+<div class="modal-overlay" id="achModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🏆 成就殿堂</h3>
+      <button class="modal-close" id="achModalClose">✕</button>
+    </div>
+    <div class="ach-summary">已达成 <span id="achCount">0/17</span> · 消费/营收/升级/心情/摸头都能赚钻石！</div>
+    <div class="ach-list" id="achList"></div>
+  </div>
+</div>
+
+<!-- ===== Welcome Back Modal (离线收益) ===== -->
+<div class="modal-overlay" id="welcomeBackModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>☀️ 欢迎回来！</h3>
+      <button class="modal-close" id="welcomeBackClose">✕</button>
+    </div>
+    <div class="wb-body">
+      <div class="wb-cat">🐱</div>
+      <div class="wb-text" id="wbText"></div>
+      <div class="wb-gain" id="wbGain"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="wbBtn">收下金币 🪙</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Daily Tasks Modal (每日任务) ===== -->
+<div class="modal-overlay" id="dailyTasksModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>✅ 每日任务</h3>
+      <button class="modal-close" id="dailyTasksClose">✕</button>
+    </div>
+    <div class="task-list" id="dailyTaskList"></div>
+    <div class="task-tip" id="dailyTaskTip"></div>
+  </div>
+</div>
+
+<!-- ===== Side Quests Modal (支线任务) ===== -->
+<div class="modal-overlay" id="sideQuestsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🗺️ 支线任务及进展</h3>
+      <button class="modal-close" id="sideQuestsClose">✕</button>
+    </div>
+    <div class="quest-list" id="sideQuestList"></div>
+    <div class="task-tip" id="sideQuestTip"></div>
+  </div>
+</div>
+
+<!-- ===== Shop Name Edit Modal (店铺改名) ===== -->
+<div class="modal-overlay" id="shopNameModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="shopNameTitle">修改店铺名称</h3>
+      <button class="modal-close" id="shopNameClose">✕</button>
+    </div>
+    <div class="field">
+      <label>店铺名称（最多 7 个字）</label>
+      <input type="text" id="shopNameInput" maxlength="7" placeholder="请输入店铺名称">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="shopNameSave">保存</button>
+      <button class="btn-ghost" id="shopNameCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Daily Settlement Report (昨日结算) ===== -->
+<div class="modal-overlay" id="settleReportModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>📒 昨日经营结算</h3>
+      <button class="modal-close" id="settleReportClose">✕</button>
+    </div>
+    <div class="settle-report" id="settleReportBody"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="settleReportBtn">新的一天，加油！</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 1. DATA: 5 NPC Cats
+// ============================================================
+const CATS = [
+  { id:'ahuang',   name:'阿黄', role:'店长',       img:'assets/cat-ahuang-t.webp',
+    desc:'全身雪白、只有耳朵和鼻子是黑色的大猫。它是这家店的灵魂人物，总是笑眯眯地招呼每一位客人。',
+    lines:['欢迎光临大猫饰品店~','今天想给哪只猫买点小饰品呀？','我们店的饰品都是手工做的哦！','咩咩又躲在柜台下面偷吃小鱼干了...'] },
+  { id:'tudou',    name:'土豆', role:'保安',       img:'assets/cat-tudou-t.webp',
+    desc:'体型肥胖的橘猫，圆滚滚的肚子是它的招牌。虽然看起来很凶，其实胆子很小，主要负责看店。',
+    lines:['站住！...哦是你啊，进来吧。','我...我其实不凶的。','最近又胖了三斤，被阿黄说了...','别看我这样，我可是很能打的！'] },
+  { id:'dengdeng', name:'灯灯', role:'店员',       img:'assets/cat-dengdeng-t.webp',
+    desc:'体型壮硕、个头很高的黑猫，力气很大，负责搬运货物和整理货架。看起来酷酷的，其实很温柔。',
+    lines:['货架都整理好了。','需要搬什么跟我说。','...（默默点头）','新到的饰品我帮你放最上面了。'] },
+  { id:'chuqi',    name:'初七', role:'收银员小妹', img:'assets/cat-chuqi-t.webp',
+    desc:'体型高大优雅的布偶猫，蓝眼睛特别漂亮。是店里最受欢迎的收银员，算账又快又准。',
+    lines:['欢迎光临，请问需要什么？','一共是 XX 积分，请确认~','今天也要开心哦！','你买的东西我都帮你包好啦~'] },
+  { id:'miemie',   name:'咩咩', role:'吉祥物',     img:'assets/cat-miemie-t.webp',
+    desc:'个头最小的加菲猫，脸扁扁的特别可爱。是店里的吉祥物，负责卖萌和招揽生意。',
+    lines:['喵呜~（歪头）','咩咩今天也很可爱！','要不要摸摸我的头呀？','店长说我是镇店之宝！'] },
+];
+
+// ============================================================
+// 2. DATA: 串珠饰品 + 治愈文案
+// ============================================================
+function getBeadSVG(type, color1, color2, name) {
+  // 手绘风精致饰品 SVG：带光泽渐变、阴影、编绳纹理
+  const glow = `<defs><radialGradient id="g1" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/><stop offset="40%" stop-color="${color1}"/><stop offset="100%" stop-color="${color2}"/></radialGradient><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${color1}"/><stop offset="100%" stop-color="${color2}"/></linearGradient><filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/></filter></defs>`;
+  if (type === 'earring') {
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280"><rect width="200" height="280" fill="#FFF8F0" rx="14"/><text x="100" y="36" text-anchor="middle" font-size="17" fill="#8B7355" font-weight="bold">${name}</text>${glow}<g transform="translate(100,80)" filter="url(#sh)"><path d="M0,-8 L0,10" stroke="#C9A227" stroke-width="3" stroke-linecap="round"/><circle cx="0" cy="18" r="10" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><circle cx="0" cy="44" r="8" fill="url(#g2)" stroke="${color2}" stroke-width="1"/><circle cx="0" cy="66" r="6" fill="url(#g1)" stroke="${color2}" stroke-width="1"/><path d="M-10,18 Q-14,44 -8,66 M10,18 Q14,44 8,66" stroke="${color2}" stroke-width="1.5" fill="none" opacity="0.6"/><text x="0" y="105" text-anchor="middle" font-size="12" fill="#B87A4E">琉璃耳环</text></g></svg>`)}`;
+  }
+  if (type === '吊坠') {
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280"><rect width="200" height="280" fill="#FFF8F0" rx="14"/><text x="100" y="36" text-anchor="middle" font-size="17" fill="#8B7355" font-weight="bold">${name}</text>${glow}<g transform="translate(100,80)" filter="url(#sh)"><path d="M-30,0 Q0,-18 30,0" stroke="#C9A227" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M-26,2 L26,2" stroke="#C9A227" stroke-width="2"/><path d="M0,4 L0,20" stroke="#C9A227" stroke-width="2"/><path d="M-16,26 L0,52 L16,26 Z" fill="url(#g2)" stroke="${color2}" stroke-width="1.5"/><circle cx="0" cy="40" r="6" fill="url(#g1)" stroke="#fff" stroke-width="1"/><text x="0" y="88" text-anchor="middle" font-size="12" fill="#B87A4E">青金石吊坠</text></g></svg>`)}`;
+  }
+  if (type === '项链') {
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280"><rect width="200" height="280" fill="#FFF8F0" rx="14"/><text x="100" y="36" text-anchor="middle" font-size="17" fill="#8B7355" font-weight="bold">${name}</text>${glow}<g transform="translate(100,80)" filter="url(#sh)"><path d="M-70,0 Q0,60 70,0" stroke="url(#g2)" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="-70" cy="0" r="8" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><circle cx="-35" cy="26" r="6" fill="url(#g1)" stroke="${color2}" stroke-width="1"/><circle cx="0" cy="38" r="9" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><circle cx="35" cy="26" r="6" fill="url(#g1)" stroke="${color2}" stroke-width="1"/><circle cx="70" cy="0" r="8" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><text x="0" y="88" text-anchor="middle" font-size="12" fill="#B87A4E">珍珠项链</text></g></svg>`)}`;
+  }
+  return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280"><rect width="200" height="280" fill="#FFF8F0" rx="14"/><text x="100" y="36" text-anchor="middle" font-size="17" fill="#8B7355" font-weight="bold">${name}</text>${glow}<g transform="translate(100,110)" filter="url(#sh)"><path d="M-60,0 Q0,-40 60,0 Q0,40 -60,0" stroke="url(#g2)" stroke-width="3" fill="none"/><circle cx="-60" cy="0" r="8" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><circle cx="-40" cy="-20" r="7" fill="url(#g1)" stroke="${color2}" stroke-width="1"/><circle cx="-14" cy="-28" r="9" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><circle cx="14" cy="-28" r="7" fill="url(#g1)" stroke="${color2}" stroke-width="1"/><circle cx="40" cy="-20" r="9" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><circle cx="60" cy="0" r="8" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><circle cx="40" cy="20" r="7" fill="url(#g1)" stroke="${color2}" stroke-width="1"/><circle cx="14" cy="28" r="9" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><circle cx="-14" cy="28" r="7" fill="url(#g1)" stroke="${color2}" stroke-width="1"/><circle cx="-40" cy="20" r="9" fill="url(#g1)" stroke="${color2}" stroke-width="1.5"/><text x="0" y="62" text-anchor="middle" font-size="12" fill="#B87A4E">白水晶手串</text></g></svg>`)}`;
+}
+
+const CONSTELLATION_COLORS = {
+  aries:['#E74C3C','#F1948A'], taurus:['#27AE60','#82E0AA'], gemini:['#F1C40F','#F9E79F'],
+  cancer:['#BDC3C7','#D5DBDB'], leo:['#F39C12','#FAD7A0'], virgo:['#8B6914','#C9A227'],
+  libra:['#E67E22','#F5B041'], scorpio:['#8E44AD','#C39BD3'], sagittarius:['#16A085','#76D7C4'],
+  capricorn:['#5D6D7E','#AEB6BF'], aquarius:['#3498DB','#85C1E9'], pisces:['#1ABC9C','#76D7C4'],
+};
+const MBTI_COLORS = {
+  'analyst':['#9B59B6','#D2B4DE'], 'diplomat':['#27AE60','#82E0AA'],
+  'sentinel':['#5DADE2','#AED6F1'], 'explorer':['#F1C40F','#F9E79F'],
+};
+const MBTI_TYPES = {
+  istj:['sentinel'], isfj:['sentinel'], esfj:['sentinel'], estj:['sentinel'],
+  infj:['diplomat'], infp:['diplomat'], enfj:['diplomat'], enfp:['diplomat'],
+  intj:['analyst'], intp:['analyst'], entj:['analyst'], entp:['analyst'],
+  istp:['explorer'], isfp:['explorer'], estp:['explorer'], esfp:['explorer'],
+};
+
+const DEFAULT_CARDS = {
+  mbti: [
+    { id:'istj', name:'ISTJ', label:'物流师',   type:'手链', rarity:'R',  quote:'你笑起来真好看', jewel:'bracelet-crystal', hue:0 },
+    { id:'isfj', name:'ISFJ', label:'守卫者',   type:'吊坠', rarity:'R',  quote:'温柔的人会被世界温柔以待', jewel:'pendant-lapis', hue:0 },
+    { id:'esfj', name:'ESFJ', label:'执政官',   type:'吊坠', rarity:'R',  quote:'愿你的每一天都闪闪发光', jewel:'pendant-lapis', hue:40 },
+    { id:'estj', name:'ESTJ', label:'总经理',   type:'手链', rarity:'N',  quote:'生活明朗，万物可爱', jewel:'bracelet-glass', hue:0 },
+    { id:'infj', name:'INFJ', label:'提倡者',   type:'手链', rarity:'SSR',quote:'温柔的人会被世界温柔以待', jewel:'bracelet-crystal', hue:200 },
+    { id:'infp', name:'INFP', label:'调停者',   type:'手链', rarity:'SR', quote:'慢慢来，比较快', jewel:'bracelet-braided', hue:0 },
+    { id:'enfj', name:'ENFJ', label:'主人公',   type:'耳环', rarity:'SR', quote:'被爱包围的每一天', jewel:'earring-glass', hue:0 },
+    { id:'enfp', name:'ENFP', label:'竞选者',   type:'耳环', rarity:'SR', quote:'好运伴随有缘人', jewel:'earring-glass', hue:60 },
+    { id:'intj', name:'INTJ', label:'建筑师',   type:'手链', rarity:'SSR',quote:'你值得所有的美好', jewel:'bracelet-crystal', hue:120 },
+    { id:'intp', name:'INTP', label:'逻辑学家', type:'项链', rarity:'SR', quote:'做自己的小太阳', jewel:'necklace-pearl', hue:0 },
+    { id:'entj', name:'ENTJ', label:'指挥官',   type:'项链', rarity:'N',  quote:'做自己的小太阳', jewel:'necklace-pearl', hue:40 },
+    { id:'entp', name:'ENTP', label:'辩论家',   type:'项链', rarity:'R',  quote:'好运伴随有缘人', jewel:'necklace-pearl', hue:200 },
+    { id:'istp', name:'ISTP', label:'鉴赏家',   type:'项链', rarity:'N',  quote:'生活明朗，万物可爱', jewel:'necklace-pearl', hue:120 },
+    { id:'isfp', name:'ISFP', label:'探险家',   type:'项链', rarity:'R',  quote:'今天也要好好爱自己', jewel:'necklace-pearl', hue:300 },
+    { id:'estp', name:'ESTP', label:'企业家',   type:'项链', rarity:'N',  quote:'生活明朗，万物可爱', jewel:'necklace-pearl', hue:160 },
+    { id:'esfp', name:'ESFP', label:'表演者',   type:'耳环', rarity:'R',  quote:'今天也要好好爱自己', jewel:'earring-glass', hue:120 },
+  ],
+  constellation: [
+    { id:'aries', name:'白羊座', label:'3.21-4.19', type:'耳环', rarity:'N',  quote:'你笑起来真好看', jewel:'earring-glass', hue:30 },
+    { id:'taurus', name:'金牛座', label:'4.20-5.20', type:'手链', rarity:'R',  quote:'愿你的每一天都闪闪发光', jewel:'bracelet-braided', hue:60 },
+    { id:'gemini', name:'双子座', label:'5.21-6.21', type:'手链', rarity:'SR', quote:'被爱包围的每一天', jewel:'bracelet-glass', hue:80 },
+    { id:'cancer', name:'巨蟹座', label:'6.22-7.22', type:'耳环', rarity:'N',  quote:'你的存在本身就是礼物', jewel:'earring-glass', hue:200 },
+    { id:'leo', name:'狮子座', label:'7.23-8.22', type:'手链', rarity:'SSR',quote:'所有美好都在赶来的路上', jewel:'bracelet-crystal', hue:40 },
+    { id:'virgo', name:'处女座', label:'8.23-9.22', type:'耳环', rarity:'R',  quote:'好运伴随有缘人', jewel:'earring-glass', hue:300 },
+    { id:'libra', name:'天秤座', label:'9.23-10.23', type:'耳环', rarity:'SR', quote:'被爱包围的每一天', jewel:'earring-glass', hue:160 },
+    { id:'scorpio', name:'天蝎座', label:'10.24-11.22', type:'吊坠', rarity:'SSR', quote:'你值得所有的美好', jewel:'pendant-lapis', hue:200 },
+    { id:'sagittarius', name:'射手座', label:'11.23-12.21', type:'吊坠', rarity:'R', quote:'愿你的每一天都闪闪发光', jewel:'pendant-lapis', hue:120 },
+    { id:'capricorn', name:'摩羯座', label:'12.22-1.19', type:'手链', rarity:'SR', quote:'慢慢来，比较快', jewel:'bracelet-braided', hue:200 },
+    { id:'aquarius', name:'水瓶座', label:'1.20-2.18', type:'吊坠', rarity:'R', quote:'你的存在本身就是礼物', jewel:'pendant-lapis', hue:300 },
+    { id:'pisces', name:'双鱼座', label:'2.19-3.20', type:'耳环', rarity:'SR', quote:'所有美好都在赶来的路上', jewel:'earring-glass', hue:240 },
+  ]
+};
+
+// 饰品槽位映射：耳环→耳朵，手链/吊坠/项链→脖子或爪子
+const SLOT_MAP = { '耳环':'ear', '手链':'paw', '吊坠':'neck', '项链':'neck' };
+
+// R18/R39: 饰品真实佩戴 - 生成透明背景装饰SVG（蝴蝶结/耳环/项链/手链），无白底卡牌
+function getWearSVG(card) {
+  const hue = card.hue || 0;
+  const c1 = `hsl(${hue}, 72%, 62%)`;
+  const c2 = `hsl(${hue}, 65%, 42%)`;
+  const gold = '#D4A017';
+  const type = card.type;
+  if (type === '耳环') {
+    // 耳环：挂在耳朵上的小吊坠
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="90" height="130" viewBox="0 0 90 130"><path d="M45,4 L45,34" stroke="${gold}" stroke-width="3" stroke-linecap="round"/><circle cx="45" cy="46" r="13" fill="${c1}" stroke="${c2}" stroke-width="2"/><circle cx="45" cy="46" r="5" fill="#fff" opacity="0.6"/><circle cx="45" cy="78" r="9" fill="${c2}" stroke="${c2}" stroke-width="1.5"/><path d="M37,78 Q45,94 53,78" stroke="${gold}" stroke-width="2" fill="none"/></svg>`)}`;
+  }
+  if (type === '手链') {
+    // 手链：爪子上的串珠手链
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="130" height="60" viewBox="0 0 130 60"><path d="M6,30 Q32,8 65,30 Q98,52 124,30" stroke="${gold}" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="22" cy="20" r="7" fill="${c1}" stroke="${c2}" stroke-width="1.5"/><circle cx="48" cy="14" r="6" fill="${c2}" stroke="${c2}" stroke-width="1"/><circle cx="75" cy="20" r="7" fill="${c1}" stroke="${c2}" stroke-width="1.5"/><circle cx="102" cy="30" r="6" fill="${c2}" stroke="${c2}" stroke-width="1"/></svg>`)}`;
+  }
+  if (type === '吊坠') {
+    // 吊坠：脖子上的吊坠
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="130" height="120" viewBox="0 0 130 120"><path d="M8,8 Q65,52 122,8" stroke="${gold}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M65,56 L65,76" stroke="${gold}" stroke-width="2.5"/><path d="M45,80 L65,108 L85,80 Z" fill="${c1}" stroke="${c2}" stroke-width="2"/><circle cx="65" cy="92" r="5" fill="#fff" opacity="0.6"/></svg>`)}`;
+  }
+  // 项链：珍珠项链
+  return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100"><path d="M4,4 Q75,88 146,4" stroke="${gold}" stroke-width="2.5" fill="none"/><circle cx="12" cy="14" r="6" fill="${c1}" stroke="#fff" stroke-width="1"/><circle cx="38" cy="40" r="5" fill="${c2}" stroke="#fff" stroke-width="1"/><circle cx="65" cy="58" r="7" fill="${c1}" stroke="#fff" stroke-width="1"/><circle cx="85" cy="58" r="6" fill="${c2}" stroke="#fff" stroke-width="1"/><circle cx="112" cy="40" r="5" fill="${c1}" stroke="#fff" stroke-width="1"/><circle cx="138" cy="14" r="6" fill="${c2}" stroke="#fff" stroke-width="1"/></svg>`)}`;
+}
+
+// 手绘风现实珠宝参考图（AI 生成）
+const JEWEL_IMAGES = {
+  'bracelet-crystal': 'assets/jewel-bracelet-crystal.jpg',  // 喜马拉雅白水晶手串
+  'earring-glass':    'assets/jewel-earring-glass.jpg',     // 尼泊尔琉璃耳环
+  'bracelet-glass':   'assets/jewel-bracelet-glass.jpg',    // 西亚琉璃手串
+  'bracelet-braided': 'assets/jewel-bracelet-braided.jpg',  // 手工编绳手串
+  'pendant-lapis':    'assets/jewel-pendant-lapis.jpg',     // 青金石吊坠
+  'necklace-pearl':   'assets/jewel-necklace-pearl.jpg',    // 珍珠项链
+};
+
+function getCardImage(card) {
+  return JEWEL_IMAGES[card.jewel] || 'assets/jewel-bracelet-crystal.jpg';
+}
+// 卡牌色相滤镜：同一珠宝图通过 hue-rotate 产生不同配色
+function getCardFilter(card) {
+  const hue = card.hue || 0;
+  return `hue-rotate(${hue}deg) saturate(1.05)`;
+}
+
+// ============================================================
+// 3. DATA: 用品店 & 补给店
+// ============================================================
+const SUPPLY_ITEMS = [
+  { id:'fish',    name:'小鱼干',   emoji:'🐟', price:15,  mood:+6,  desc:'猫猫最爱', cat:'miemie',  activity:'eat',  useLine:'咔嚓咔嚓，小鱼干真香！' },
+  { id:'milk',    name:'牛奶杯',   emoji:'🥛', price:20,  mood:+5,  desc:'补充营养', cat:'chuqi',   activity:'eat',  useLine:'咕嘟咕嘟，牛奶好好喝~' },
+  { id:'can',     name:'猫罐头',   emoji:'🥫', price:30,  mood:+8,  desc:'开罐头素材', cat:'ahuang', activity:'eat',  useLine:'呀咪呀咪，罐头太美味了！' },
+  { id:'toy',     name:'逗猫棒',   emoji:'🪄', price:25,  mood:+7,  desc:'逗猫神器', cat:'tudou',   activity:'play', useLine:'喵呜！逗猫棒好好玩！' },
+  { id:'ball',    name:'毛线球',   emoji:'🧶', price:18,  mood:+6,  desc:'猫猫最爱', cat:'dengdeng',activity:'play', useLine:'滚来滚去，毛线球真有趣！' },
+  { id:'pillow',  name:'猫窝',     emoji:'🛏️', price:50,  mood:+10, desc:'舒服睡觉', cat:'chuqi',   activity:'rest', useLine:'呼噜呼噜，猫窝好舒服~' },
+];
+
+// R37: 15个用品动画卡片（5猫×3类活动：进食/玩耍/休息，每类3版文案轮播）
+const SUPPLY_ACTIVITY = {
+  eat:  { label:'进食', emoji:'🍽️' },
+  play: { label:'玩耍', emoji:'🎾' },
+  rest: { label:'休息', emoji:'😴' },
+};
+
+const SUPPLY_CARDS = [
+  { catId:'ahuang',   activity:'eat',  lines:['咔嚓咔嚓，小鱼干真香！','吧唧吧唧，好好吃~','喵呜，再来一条！'] },
+  { catId:'ahuang',   activity:'play', lines:['逗猫棒飞来飞去！','嘿咻嘿咻，追不上我！','喵！终于抓住了！'] },
+  { catId:'ahuang',   activity:'rest', lines:['呼噜呼噜~','阳光好暖，好想睡~','zzz... 别吵我'] },
+  { catId:'tudou',    activity:'eat',  lines:['咔嚓咔嚓，罐头太香了！','吧唧吧唧，停不下来~','嗝！吃撑了...'] },
+  { catId:'tudou',    activity:'play', lines:['毛线球滚来滚去！','嘿！看我的！','呼... 好累，歇会儿'] },
+  { catId:'tudou',    activity:'rest', lines:['呼噜呼噜~','肚子圆圆的，好想睡~','zzz... 别碰我'] },
+  { catId:'dengdeng', activity:'eat',  lines:['咔嚓咔嚓，饼干真脆！','吧唧吧唧，好好吃~','喵呜，再来一块！'] },
+  { catId:'dengdeng', activity:'play', lines:['逗猫棒甩来甩去！','嘿咻！力气很大！','喵！抓住了！'] },
+  { catId:'dengdeng', activity:'rest', lines:['呼噜呼噜~','货架整理完了，休息下~','zzz... 好安静'] },
+  { catId:'chuqi',    activity:'eat',  lines:['咕嘟咕嘟，牛奶好好喝~','吧唧吧唧，布丁好嫩滑！','喵呜，好满足~'] },
+  { catId:'chuqi',    activity:'play', lines:['毛线球滚来滚去！','嘻嘻，好好玩~','喵！接住了！'] },
+  { catId:'chuqi',    activity:'rest', lines:['呼噜呼噜~','蓝眼睛眨啊眨，好困~','zzz... 做个好梦'] },
+  { catId:'miemie',   activity:'eat',  lines:['咔嚓咔嚓，小鱼干好香！','吧唧吧唧，咩咩最爱~','喵呜，还要还要！'] },
+  { catId:'miemie',   activity:'play', lines:['逗猫棒飞来飞去！','咩咩跳起来！','喵！抓到了！'] },
+  { catId:'miemie',   activity:'rest', lines:['呼噜呼噜~','咩咩要睡觉啦~','zzz... 好可爱'] },
+];
+
+// 面包店商品（新店）
+const BAKERY_ITEMS = [
+  { id:'baguette', name:'法棍面包', emoji:'🥖', price:22, mood:+6, desc:'香脆可口', cat:'ahuang', useLine:'咔嚓！法棍好香脆~' },
+  { id:'croissant',name:'牛角包',   emoji:'🥐', price:28, mood:+7, desc:'黄油香气', cat:'chuqi',  useLine:'层层酥脆，太好吃啦！' },
+  { id:'bread',    name:'吐司面包', emoji:'🍞', price:18, mood:+5, desc:'松软香甜', cat:'tudou',  useLine:'软软的吐司，好满足~' },
+  { id:'cake',     name:'草莓蛋糕', emoji:'🍰', price:45, mood:+10,desc:'甜蜜治愈', cat:'miemie', useLine:'甜甜的蛋糕，喵呜~' },
+  { id:'donut',    name:'甜甜圈',   emoji:'🍩', price:30, mood:+8, desc:'五彩糖霜', cat:'dengdeng',useLine:'甜甜圈好好吃！' },
+  { id:'cookie',   name:'曲奇饼干', emoji:'🍪', price:15, mood:+5, desc:'酥脆小点', cat:'ahuang', useLine:'咔嚓咔嚓，曲奇真香！' },
+];
+
+// 咖啡店商品（新店）
+const CAFE_ITEMS = [
+  { id:'latte',    name:'拿铁咖啡', emoji:'☕', price:25, mood:+6, desc:'香醇顺滑', cat:'chuqi',  useLine:'咕嘟咕嘟，拿铁好好喝~' },
+  { id:'mocha',    name:'摩卡咖啡', emoji:'🍫', price:30, mood:+7, desc:'巧克力香', cat:'ahuang', useLine:'摩卡好香，精神满满！' },
+  { id:'milkTea',  name:'珍珠奶茶', emoji:'🧋', price:28, mood:+7, desc:'Q弹珍珠', cat:'miemie', useLine:'吸溜吸溜，珍珠好Q弹！' },
+  { id:'juice',    name:'鲜榨果汁', emoji:'🍹', price:20, mood:+6, desc:'维C满满', cat:'tudou',  useLine:'酸酸甜甜，好清爽！' },
+  { id:'smoothie', name:'水果冰沙', emoji:'🥤', price:35, mood:+8, desc:'冰爽解暑', cat:'dengdeng',useLine:'冰沙好凉快，喵！' },
+  { id:'pudding',  name:'焦糖布丁', emoji:'🍮', price:32, mood:+8, desc:'嫩滑香甜', cat:'chuqi',  useLine:'布丁滑滑的，好幸福~' },
+];
+
+// ============================================================
+// 4. STATE
+// ============================================================
+let state = {
+  points: 200,             // 💎 钻石：稀缺硬通货（抽卡/稀有饰品）
+  coins: 100,              // 🪙 金币：日常软通货（用品店/背包扩容）
+  shopNames: { supply: '猫猫用品店', accessory: '大猫饰品店' },  // 店铺自定义名称（最多7字）
+  shopLevels: { supply: 1, accessory: 1 },  // 店铺扩建等级（1-5）
+  openedShops: { bakery: false, cafe: false },  // 新店是否已开启（面包店/咖啡店）
+  furniture: {},           // 已购家具 { id: count }
+  furniturePlaced: { street: [], supply: [], accessory: [] },  // 已摆放家具 [{id,x,y}]
+  catAffections: { ahuang:0, tudou:0, dengdeng:0, chuqi:0, miemie:0 },
+  catMoods: { ahuang:80, tudou:70, dengdeng:75, chuqi:85, miemie:90 },
+  ownedItems: [],
+  inventory: {},           // { itemId: count }
+  backpack: [],
+  catEquips: {},           // { catId: [cardKey, ...] }
+  cardConfigs: {},
+  totalSpent: 0,
+  dailyRevenue: 0,         // 当日营收（金币）
+  totalRevenue: 0,         // 累计营收（金币）
+  revenueCanCount: 0,      // 营收版开罐头次数
+  canCount: 0,             // 兼容旧版
+  catToyUsage: {},         // { catId: [timestamp, ...] }
+  newbieClaimed: false,
+  petStreak: {},           // 连续摸头计数
+  lastPetCat: null,
+  frozenUntil: 0,          // 冻结时间戳
+  lastResetDate: '',       // 每日重置标记
+  lastVisitTime: Date.now(), // 上次在线时间（离线收益计算）
+  lastCheckinDate: '',     // 上次签到日期（猫历日期字符串）
+  checkinStreak: 0,        // 连续签到天数
+  dailyPetCount: 0,        // 今日摸头次数（每日任务用）
+  todayCustomers: 0,       // 今日进店客人
+  todaySales: 0,           // 今日售出商品数
+  settleHistory: [],       // 每日结算记录 [{date, customers, sales, revenue}]
+  achievements: {},        // 成就领取记录 { achievementId: true }
+  petAllToday: {},         // 今日摸头过的猫 { catId: true }
+};
+
+// 跨天结算标记：loadState 检测到新的一天且昨日有经营数据时置为 true，init 时弹结算报告
+let pendingSettleReport = false;
+
+const SAVE_KEY = 'bigcat_store_v4';
+
+function buildDefaultConfigs() {
+  const configs = {};
+  for (const cat of ['mbti','constellation']) {
+    for (const card of DEFAULT_CARDS[cat]) {
+      configs[`${cat}_${card.id}`] = { image:'', customName:'', customLabel:'', customDesc:'' };
+    }
+  }
+  return configs;
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state = { ...state, ...parsed };
+      if (!state.cardConfigs || Object.keys(state.cardConfigs).length === 0) state.cardConfigs = buildDefaultConfigs();
+      // 数据迁移：旧版 ownedItems → inventory（避免用户已购用品丢失）
+      if ((!state.inventory || Object.keys(state.inventory).length === 0) && Array.isArray(state.ownedItems) && state.ownedItems.length) {
+        state.inventory = {};
+        state.ownedItems.forEach(id => { state.inventory[id] = (state.inventory[id] || 0) + 1; });
+      }
+      // 兼容旧版：catEquips 若不存在则初始化
+      if (!state.catEquips) state.catEquips = {};
+      if (!state.catMoods) state.catMoods = { ahuang:80, tudou:70, dengdeng:75, chuqi:85, miemie:90 };
+      if (!state.catToyUsage) state.catToyUsage = {};
+      if (!state.furniturePlaced) state.furniturePlaced = { street: [], supply: [], accessory: [] };
+      saveState();
+    } else {
+      state.cardConfigs = buildDefaultConfigs();
+      saveState();
+    }
+  } catch(e) { state.cardConfigs = buildDefaultConfigs(); }
+  // 每日结算：跨天时归档昨日经营数据到账本
+  const today = new Date().toDateString();
+  if (state.lastResetDate !== today) {
+    if (state.dailyRevenue > 0 || state.todayCustomers > 0) {
+      const y = new Date(Date.now() - 86400000);
+      state.settleHistory.unshift({
+        date: `${y.getMonth()+1}月${y.getDate()}日`,
+        customers: state.todayCustomers,
+        sales: state.todaySales,
+        revenue: state.dailyRevenue
+      });
+      if (state.settleHistory.length > 14) state.settleHistory = state.settleHistory.slice(0, 14);
+      pendingSettleReport = true;
+    }
+    state.lastResetDate = today;
+    state.dailyRevenue = 0;
+    state.todayCustomers = 0;
+    state.todaySales = 0;
+    state.catToyUsage = {};
+    saveState();
+  }
+}
+function saveState() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e) {} }
+
+// ============================================================
+// 4.5 CAT CALENDAR (猫猫日历)
+// ============================================================
+const CN_NUM = ['零','一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十','廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十','卅一'];
+const CAT_MONTHS = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','腊月'];
+
+// 公历 → 猫历日期字符串（如"猫历八月十四"）
+function getCatDateStr(d) {
+  const date = d || new Date();
+  const m = CAT_MONTHS[date.getMonth()] || (CN_NUM[date.getMonth()+1] + '月');
+  const day = CN_NUM[date.getDate()] || String(date.getDate());
+  return `猫历${m}${day}`;
+}
+
+// 猫历日期 key（用于每日签到判断，如"8-14"）
+function getCatDateKey(d) {
+  const date = d || new Date();
+  return `${date.getMonth()+1}-${date.getDate()}`;
+}
+
+// ============================================================
+// 4.6 LOGIN + DAILY CHECK-IN (登录签到)
+// ============================================================
+const CHECKIN_BASE = [
+  { emoji:'💎', name:'钻石', num:20 },
+  { emoji:'🪙', name:'金币', num:50 },
+  { emoji:'🐟', name:'小鱼干', num:1 },
+];
+
+function renderCheckinModal() {
+  $('checkinCatDate').textContent = getCatDateStr();
+  // 五猫欢迎
+  const catsEl = $('checkinCats');
+  catsEl.innerHTML = '';
+  CATS.forEach(cat => {
+    const img = document.createElement('img');
+    img.src = cat.img;
+    img.alt = cat.name;
+    catsEl.appendChild(img);
+  });
+  // 签到状态
+  const todayKey = getCatDateKey();
+  const already = state.lastCheckinDate === todayKey;
+  const itemsEl = $('checkinItems');
+  itemsEl.innerHTML = '';
+  CHECKIN_BASE.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'lc-item';
+    el.innerHTML = `<div class="li-emoji">${item.emoji}</div><div class="li-name">${item.name}</div><div class="li-num">+${item.num}</div>`;
+    itemsEl.appendChild(el);
+  });
+  const btn = $('btnCheckin');
+  if (already) {
+    $('checkinTitle').textContent = `今日已签到 · 连续 ${state.checkinStreak} 天`;
+    btn.textContent = '欢迎回来 🐱';
+    btn.disabled = true;
+  } else {
+    const streak = state.lastCheckinDate === getCatDateKey(new Date(Date.now() - 86400000)) ? state.checkinStreak + 1 : 1;
+    $('checkinTitle').textContent = `今日签到礼包 · 连续 ${streak} 天`;
+    btn.textContent = '签到领礼包 🎁';
+    btn.disabled = false;
+  }
+}
+
+// 打开签到浮窗（游戏画面已展示，浮窗叠加其上）
+function openCheckinModal() {
+  renderCheckinModal();
+  $('checkinOverlay').classList.add('open');
+}
+
+// 关闭签到浮窗
+function closeCheckinModal() {
+  $('checkinOverlay').classList.remove('open');
+}
+
+function doCheckin() {
+  const todayKey = getCatDateKey();
+  if (state.lastCheckinDate === todayKey) return;
+  // 连续签到判断
+  const yesterdayKey = getCatDateKey(new Date(Date.now() - 86400000));
+  state.checkinStreak = (state.lastCheckinDate === yesterdayKey) ? state.checkinStreak + 1 : 1;
+  state.lastCheckinDate = todayKey;
+  // 发放礼包
+  addPoints(20);
+  addCoins(50);
+  const supply = SUPPLY_ITEMS[Math.floor(Math.random() * SUPPLY_ITEMS.length)];
+  state.inventory[supply.id] = (state.inventory[supply.id] || 0) + 1;
+  saveState();
+  // 连续签到加成：每 7 天额外送钻石
+  let extra = '';
+  if (state.checkinStreak % 7 === 0) {
+    addPoints(30);
+    extra = '，连续 7 天额外 +30💎！';
+  }
+  confettiBurst();
+  AudioEngine.sfxDiamond();
+  showToast(`🎁 签到成功！+20💎 +50🪙 +${supply.name}${extra}`);
+  // 签到后展示已签到状态
+  renderCheckinModal();
+}
+
+// 初始化：游戏画面直接展示，签到浮窗叠加其上；用户手势解锁音乐
+function initCheckin() {
+  // 绑定事件
+  $('btnCheckin').addEventListener('click', () => {
+    // 用户手势：解锁并启动背景音乐
+    AudioEngine.init();
+    AudioEngine.startMusic('street');
+    doCheckin();
+  });
+  $('checkinClose').addEventListener('click', () => {
+    AudioEngine.init();
+    AudioEngine.startMusic('street');
+    closeCheckinModal();
+  });
+  // 点击遮罩关闭
+  $('checkinOverlay').addEventListener('click', (e) => {
+    if (e.target === $('checkinOverlay')) {
+      AudioEngine.init();
+      AudioEngine.startMusic('street');
+      closeCheckinModal();
+    }
+  });
+  // 仅当日未签到时才弹出签到浮窗
+  const todayKey = getCatDateKey();
+  if (state.lastCheckinDate !== todayKey) {
+    openCheckinModal();
+  }
+}
+
+// ============================================================
+// 5. UTILITIES
+// ============================================================
+function $(id) { return document.getElementById(id); }
+
+function isFrozen() { return Date.now() < state.frozenUntil; }
+
+function showToast(msg) {
+  const old = document.querySelector('.toast');
+  if (old) old.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+
+function showPointsFloat(delta) {
+  const el = document.createElement('div');
+  el.className = 'points-float ' + (delta >= 0 ? 'pos' : 'neg');
+  el.textContent = delta >= 0 ? `+${delta}💎` : `${delta}💎`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function showCoinsFloat(delta) {
+  const el = document.createElement('div');
+  el.className = 'points-float ' + (delta >= 0 ? 'pos' : 'neg');
+  el.textContent = delta >= 0 ? `+${delta}🪙` : `${delta}🪙`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function addPoints(delta) {
+  state.points = Math.max(0, state.points + delta);
+  saveState();
+  updateAllPoints();
+  showPointsFloat(delta);
+}
+
+function addCoins(delta) {
+  state.coins = Math.max(0, state.coins + delta);
+  saveState();
+  updateAllPoints();
+  showCoinsFloat(delta);
+}
+
+function updateAllPoints() {
+  $('headerPointsStreet').textContent = state.points;
+  $('headerPointsSupply').textContent = state.points;
+  $('headerPointsAccessory').textContent = state.points;
+  $('headerPointsMall').textContent = state.points;
+  $('headerPointsBakery').textContent = state.points;
+  $('headerPointsCafe').textContent = state.points;
+  $('headerCoinsStreet').textContent = state.coins;
+  $('headerCoinsSupply').textContent = state.coins;
+  $('headerCoinsAccessory').textContent = state.coins;
+  $('headerCoinsMall').textContent = state.coins;
+  $('headerCoinsBakery').textContent = state.coins;
+  $('headerCoinsCafe').textContent = state.coins;
+  updateAllRevenue();
+}
+
+function updateAllRevenue() {
+  $('headerRevenueStreet').textContent = state.dailyRevenue;
+  $('headerRevenueSupply').textContent = state.dailyRevenue;
+  $('headerRevenueAccessory').textContent = state.dailyRevenue;
+  $('headerRevenueMall').textContent = state.dailyRevenue;
+  $('headerRevenueBakery').textContent = state.dailyRevenue;
+  $('headerRevenueCafe').textContent = state.dailyRevenue;
+}
+
+function addRevenue(amount) {
+  const beforeLv = getRevenueLevel();
+  state.dailyRevenue += amount;
+  state.totalRevenue += amount;
+  saveState();
+  updateAllRevenue();
+  updateCanProgress();
+  checkRevenueCanEvent();
+  // 营收等级提升检测
+  const afterLv = getRevenueLevel();
+  if (afterLv > beforeLv) {
+    const info = getRevenueLevelInfo();
+    confettiBurst();
+    let unlockTxt = '';
+    if (info.unlock === 'bakery') unlockTxt = '，已解锁面包店 🥐！';
+    if (info.unlock === 'cafe') unlockTxt = '，已解锁咖啡店 ☕！';
+    showToast(`🏆 店铺升级！营收等级 Lv.${afterLv}「${info.label}」，客单价 ×${info.bonus}${unlockTxt}`);
+    updateRevenueLevelDisplay();
+    renderStreetShops();
+  }
+  // 成就检测：营收类
+  checkAchievements();
+}
+
+// 更新营收等级显示（街道/账本）
+function updateRevenueLevelDisplay() {
+  const info = getRevenueLevelInfo();
+  document.querySelectorAll('.revenue-level-badge').forEach(el => {
+    el.textContent = `Lv.${info.level} ${info.label}`;
+  });
+  const progressEl = $('revenueLevelProgress');
+  if (progressEl) {
+    const cur = state.totalRevenue || 0;
+    const next = REVENUE_LEVEL_THRESHOLDS[getRevenueLevel()] || null;
+    if (next) {
+      const pct = Math.min(100, Math.round((cur / next.need) * 100));
+      progressEl.style.width = pct + '%';
+    } else {
+      progressEl.style.width = '100%';
+    }
+  }
+  const nextEl = $('revenueLevelNext');
+  if (nextEl) {
+    const next = REVENUE_LEVEL_THRESHOLDS[getRevenueLevel()] || null;
+    const curRev = state.totalRevenue || 0;
+    nextEl.textContent = next ? `距离 Lv.${next.level} 还需 ${Math.max(0, next.need - curRev)} 营收` : '已满级';
+  }
+}
+
+// 新店开启配置
+const NEW_SHOP_CONFIG = {
+  bakery: { name:'面包店', icon:'🥐', needLv:4, coins:5000, points:500, sub:'面包·甜品' },
+  cafe:   { name:'咖啡店', icon:'☕', needLv:5, coins:10000, points:1000, sub:'咖啡·饮品' },
+};
+
+// 渲染街道店铺（含新店灰锁占位）
+function renderStreetShops() {
+  const rl = getRevenueLevel();
+  Object.keys(NEW_SHOP_CONFIG).forEach(key => {
+    const cfg = NEW_SHOP_CONFIG[key];
+    const el = $('door' + (key === 'bakery' ? 'Bakery' : 'Cafe'));
+    if (!el) return;
+    const opened = state.openedShops[key];
+    if (opened) {
+      el.style.display = '';
+      el.classList.remove('shop-locked');
+      el.querySelector('.door-label span').textContent = cfg.name;
+      el.querySelector('.door-sub').textContent = cfg.sub;
+      el.onclick = () => switchScene(key + 'Scene');
+    } else if (rl >= cfg.needLv) {
+      // 营收达标但未开启：显示可开启状态
+      el.style.display = '';
+      el.classList.remove('shop-locked');
+      el.style.opacity = '0.85';
+      el.querySelector('.door-label span').textContent = cfg.name;
+      el.querySelector('.door-sub').textContent = '点击开启';
+      el.onclick = () => openNewShopConfirm(key);
+    } else {
+      // 未达标：隐藏（保持街道整洁）
+      el.style.display = 'none';
+    }
+  });
+}
+
+// 新店开启确认
+function openNewShopConfirm(key) {
+  const cfg = NEW_SHOP_CONFIG[key];
+  const rl = getRevenueLevel();
+  if (rl < cfg.needLv) {
+    showToast(`营收等级不足，达到 Lv.${cfg.needLv} 后可开启${cfg.name}`);
+    return;
+  }
+  if (state.openedShops[key]) return;
+  if (state.coins < cfg.coins || state.points < cfg.points) {
+    showToast(`开启${cfg.name}需要 ${cfg.coins}🪙 + ${cfg.points}💎，资源不够~`);
+    return;
+  }
+  state.coins -= cfg.coins;
+  state.points -= cfg.points;
+  state.openedShops[key] = true;
+  state.shopLevels[key] = 1;
+  saveState();
+  updateAllPoints();
+  updateAllRevenue();
+  renderStreetShops();
+  confettiBurst();
+  showToast(`🎉 ${cfg.name}开业啦！${cfg.icon} 快去看看吧~`);
+}
+
+// ============================================================
+// 5.5 SHOP NAME + EXPANSION (店铺改名 + 扩建)
+// ============================================================
+let editingShopKey = null;
+
+function applyShopNames() {
+  const s = state.shopNames.supply || '猫猫用品店';
+  const a = state.shopNames.accessory || '大猫饰品店';
+  const map = {
+    streetSupplyName: s, supplyTitleName: s, mallSupplyName: s,
+    streetAccessoryName: a, accessoryTitleName: a, mallAccessoryName: a,
+  };
+  Object.keys(map).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = map[id];
+  });
+}
+
+function openShopNameEditor(key) {
+  editingShopKey = key;
+  $('shopNameInput').value = state.shopNames[key] || '';
+  $('shopNameTitle').textContent = key === 'supply' ? '修改用品店名称' : '修改饰品店名称';
+  openModal('shopNameModal');
+  setTimeout(() => $('shopNameInput').focus(), 100);
+}
+
+function saveShopName() {
+  const val = $('shopNameInput').value.trim().slice(0, 7);
+  if (!val) { showToast('名称不能为空哦~'); return; }
+  state.shopNames[editingShopKey] = val;
+  saveState();
+  applyShopNames();
+  closeModal('shopNameModal');
+  showToast('店铺名称已更新 ✨');
+}
+
+// 门店扩建：等级1→5，提升客单价
+// 扩建等级上限受营收等级限制
+const SHOP_LEVEL_COSTS = { 2: 500, 3: 1500, 4: 3000, 5: 6000 };
+const SHOP_LEVEL_BONUS = { 1: 1, 2: 1.5, 3: 2, 4: 2.5, 5: 3 };
+
+// 营收等级：由累计营业额自动判定，决定可解锁内容与扩建上限
+const REVENUE_LEVEL_THRESHOLDS = [
+  { level: 1, need: 0,      bonus: 1,   label: '新店' },
+  { level: 2, need: 500,    bonus: 1.5, label: '成长中' },
+  { level: 3, need: 2000,   bonus: 2,   label: '小有名气' },
+  { level: 4, need: 5000,   bonus: 2.5, label: '远近闻名', unlock: 'bakery' },
+  { level: 5, need: 15000,  bonus: 3,   label: '城市名店', unlock: 'cafe' },
+];
+
+function getRevenueLevel() {
+  const rev = state.totalRevenue || 0;
+  let lv = 1;
+  for (const r of REVENUE_LEVEL_THRESHOLDS) {
+    if (rev >= r.need) lv = r.level;
+  }
+  return lv;
+}
+
+function getRevenueLevelInfo() {
+  return REVENUE_LEVEL_THRESHOLDS[getRevenueLevel() - 1];
+}
+
+function getMaxExpansionLevel() {
+  return Math.min(getRevenueLevel(), 5); // 扩建不能超过营收等级
+}
+
+// ============================================================
+// 成就体系：钻石获取途径（消费/营收/升级/心情/摸头）
+// ============================================================
+const ACHIEVEMENTS = [
+  // 消费类（累计消费钻石）
+  { id:'spend_100',  name:'初次消费',   desc:'累计消费 100💎',            type:'spend',  target:100,   reward:20 },
+  { id:'spend_500',  name:'小有投入',   desc:'累计消费 500💎',            type:'spend',  target:500,   reward:50 },
+  { id:'spend_1000', name:'忠实顾客',   desc:'累计消费 1000💎',           type:'spend',  target:1000,  reward:100 },
+  { id:'spend_2000', name:'钻石大户',   desc:'累计消费 2000💎',           type:'spend',  target:2000,  reward:200 },
+  { id:'spend_5000', name:'顶级收藏家', desc:'累计消费 5000💎',           type:'spend',  target:5000,  reward:500 },
+  // 营收类（累计营业收入金币）
+  { id:'rev_500',   name:'开门红',     desc:'累计营收 500🪙',            type:'revenue', target:500,   reward:30 },
+  { id:'rev_2000',  name:'生意兴隆',   desc:'累计营收 2000🪙',           type:'revenue', target:2000,  reward:60 },
+  { id:'rev_5000',  name:'远近闻名',   desc:'累计营收 5000🪙',           type:'revenue', target:5000,  reward:120 },
+  { id:'rev_15000', name:'城市名店',   desc:'累计营收 15000🪙',          type:'revenue', target:15000, reward:300 },
+  // 门店升级类（任一店铺达到等级）
+  { id:'shop_2',    name:'店铺扩建',   desc:'任一店铺升到 Lv.2',         type:'shop',   target:2,     reward:30 },
+  { id:'shop_3',    name:'小有名气',   desc:'任一店铺升到 Lv.3',         type:'shop',   target:3,     reward:60 },
+  { id:'shop_4',    name:'门庭若市',   desc:'任一店铺升到 Lv.4',         type:'shop',   target:4,     reward:120 },
+  { id:'shop_5',    name:'旗舰大店',   desc:'任一店铺升到 Lv.5',         type:'shop',   target:5,     reward:250 },
+  // 心情类（五只猫心情都达标）
+  { id:'mood_70',   name:'心情愉悦',   desc:'五只猫心情都 ≥70',          type:'mood',   target:70,    reward:50 },
+  { id:'mood_85',   name:'幸福满满',   desc:'五只猫心情都 ≥85',          type:'mood',   target:85,    reward:100 },
+  { id:'mood_100',  name:'全员满分',   desc:'五只猫心情都达到 100',       type:'mood',   target:100,   reward:200 },
+  // 摸头类（今日摸过全部五只猫）
+  { id:'pet_all',   name:'雨露均沾',   desc:'今日摸过全部五只猫',        type:'petAll', target:5,     reward:30 },
+];
+
+function getAchievementProgress(a) {
+  switch (a.type) {
+    case 'spend':   return state.totalSpent || 0;
+    case 'revenue': return state.totalRevenue || 0;
+    case 'shop':    return Math.max(getShopLevel('supply'), getShopLevel('accessory'));
+    case 'mood': {
+      const moods = Object.values(state.catMoods);
+      return moods.length ? Math.min(...moods) : 0;
+    }
+    case 'petAll':  return Object.keys(state.petAllToday || {}).length;
+    default: return 0;
+  }
+}
+
+function isAchievementDone(a) {
+  return getAchievementProgress(a) >= a.target;
+}
+
+// 检查并领取所有可解锁的成就
+function checkAchievements() {
+  let claimed = [];
+  ACHIEVEMENTS.forEach(a => {
+    if (state.achievements[a.id]) return;
+    if (!isAchievementDone(a)) return;
+    state.achievements[a.id] = true;
+    state.points += a.reward;
+    claimed.push(a);
+  });
+  if (claimed.length) {
+    saveState();
+    updateAllPoints();
+    claimed.forEach(a => {
+      AudioEngine.sfxDiamond();
+      showAchievementToast(a);
+    });
+  }
+}
+
+// 成就解锁弹窗
+function showAchievementToast(a) {
+  const el = document.createElement('div');
+  el.className = 'ach-toast';
+  el.innerHTML = `<div class="ach-t-ico">🏆</div><div><div class="ach-t-name">成就达成 · ${a.name}</div><div class="ach-t-desc">${a.desc} · 奖励 +${a.reward}💎</div></div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add('show'), 30);
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 500); }, 3200);
+}
+
+// 渲染成就面板
+function renderAchievements() {
+  const list = $('achList');
+  if (!list) return;
+  list.innerHTML = '';
+  ACHIEVEMENTS.forEach(a => {
+    const done = state.achievements[a.id];
+    const prog = getAchievementProgress(a);
+    const pct = Math.min(100, Math.round(prog / a.target * 100));
+    const el = document.createElement('div');
+    el.className = 'ach-item' + (done ? ' done' : '');
+    el.innerHTML = `
+      <div class="ach-ico">${done ? '🏆' : '🎯'}</div>
+      <div class="ach-info">
+        <div class="ach-name">${a.name} <span class="ach-reward">+${a.reward}💎</span></div>
+        <div class="ach-desc">${a.desc}</div>
+        <div class="ach-bar"><div class="ach-bar-fill" style="width:${done ? 100 : pct}%"></div></div>
+        <div class="ach-prog">${done ? '已领取' : `${prog}/${a.target}`}</div>
+      </div>`;
+    list.appendChild(el);
+  });
+  const claimedCount = ACHIEVEMENTS.filter(a => state.achievements[a.id]).length;
+  $('achCount').textContent = `${claimedCount}/${ACHIEVEMENTS.length}`;
+}
+
+function getShopLevel(shopKey) {
+  return state.shopLevels[shopKey] || 1;
+}
+
+function getShopBonus(shopKey) {
+  const lv = getShopLevel(shopKey);
+  return SHOP_LEVEL_BONUS[lv] || 1;
+}
+
+function openExpandModal(shopKey) {
+  const level = getShopLevel(shopKey);
+  const maxLv = getMaxExpansionLevel();
+  if (level >= maxLv) {
+    if (level >= 5) {
+      showToast('店铺已扩建到最高等级啦！');
+    } else {
+      const rl = getRevenueLevel();
+      const nextNeed = rl < 5 ? REVENUE_LEVEL_THRESHOLDS[rl].need : 99999;
+      showToast(`营收等级不足，累计营收达到 ${nextNeed} 后可继续扩建（当前 ${state.totalRevenue}）`);
+    }
+    return;
+  }
+  const cost = SHOP_LEVEL_COSTS[level + 1];
+  const nextBonus = SHOP_LEVEL_BONUS[level + 1];
+  const shopName = state.shopNames[shopKey] || (shopKey === 'supply' ? '猫猫用品店' : '大猫饰品店');
+  if (state.coins < cost) {
+    showToast(`扩建需要 ${cost}🪙，金币不够，继续经营店铺吧~`);
+    return;
+  }
+  state.coins -= cost;
+  state.shopLevels[shopKey] = level + 1;
+  saveState();
+  updateAllPoints();
+  confettiBurst();
+  showToast(`🎉 ${shopName} 扩建成功！当前等级 Lv.${level + 1}，客单价提升至 ×${nextBonus}`);
+  updateAllRevenue();
+  updateRevenueLevelDisplay();
+  // 成就检测：门店升级类
+  checkAchievements();
+}
+
+// 更新开罐进度条（累计营收每满500触发一次开罐头）
+function updateCanProgress() {
+  const mod = state.totalRevenue % REVENUE_CAN_THRESHOLD;
+  const pct = (mod / REVENUE_CAN_THRESHOLD) * 100;
+  const fill = $('canProgressFill');
+  const num = $('canProgressNum');
+  if (fill) fill.style.width = Math.min(pct, 100) + '%';
+  if (num) num.textContent = `${mod}/${REVENUE_CAN_THRESHOLD}`;
+}
+
+function confettiBurst() {
+  const colors = ['#F1C40F','#E74C3C','#3498DB','#2ECC71','#9B59B6','#F4A460'];
+  for (let i = 0; i < 24; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (Math.random() * 100) + 'vw';
+    c.style.top = '-20px';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = (Math.random() * 0.5) + 's';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3000);
+  }
+}
+
+function openModal(id) { $(id).classList.add('open'); }
+function closeModal(id) { $(id).classList.remove('open'); }
+
+function switchScene(sceneId) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  $(sceneId).classList.add('active');
+  // 场景切换：切换背景音乐
+  AudioEngine.startMusic(sceneId);
+}
+
+// ============================================================
+// 6. SCENE: Street
+// ============================================================
+function renderStreetCats() {
+  const area = $('streetCats');
+  area.innerHTML = '';
+  CATS.forEach(cat => {
+    const slot = document.createElement('div');
+    slot.className = 'street-cat';
+    slot.innerHTML = `<img src="${cat.img}" alt="${cat.name}" draggable="false"><div class="sc-name">${cat.name}</div>`;
+    slot.addEventListener('click', () => openCatModal(cat.id));
+    area.appendChild(slot);
+  });
+}
+
+// ============================================================
+// 7. RENDER: Cats (in accessory shop)
+// ============================================================
+function renderCats() {
+  renderCatsTo('catsArea');
+  renderCatsTo('catsAreaSupply');
+  renderCatsTo('catsAreaBakery');
+  renderCatsTo('catsAreaCafe');
+}
+
+function renderCatsTo(areaId) {
+  const area = $(areaId);
+  if (!area) return;
+  area.innerHTML = '';
+  CATS.forEach(cat => {
+    const slot = document.createElement('div');
+    slot.className = 'cat-slot';
+    slot.innerHTML = `
+      <div class="cat-img-wrap" id="catWrap_${areaId}_${cat.id}">
+        <img class="cat-img" src="${cat.img}" alt="${cat.name}" draggable="false">
+      </div>
+      <div class="cat-name">${cat.name}</div>
+      <div class="cat-role">${cat.role}</div>`;
+    slot.addEventListener('click', () => openCatModal(cat.id));
+    area.appendChild(slot);
+    renderCatEquips(cat.id, areaId);
+  });
+}
+
+// 渲染猫身上的饰品叠加（R18/R39: 真实佩戴，透明装饰无白底）
+function renderCatEquips(catId, areaId) {
+  const wrap = $('catWrap_' + (areaId || 'catsArea') + '_' + catId);
+  if (!wrap) return;
+  // 清除旧叠加
+  wrap.querySelectorAll('.equip-overlay').forEach(el => el.remove());
+  const equips = state.catEquips[catId] || [];
+  let earCount = 0;
+  equips.forEach(key => {
+    const [category, id] = key.split('_');
+    const card = DEFAULT_CARDS[category].find(c => c.id === id);
+    if (!card) return;
+    const cfg = state.cardConfigs[key] || {};
+    // R18/R39: 佩戴时使用透明装饰SVG（蝴蝶结/耳环/项链/手链），无白底卡牌
+    const image = getWearSVG(card);
+    let slot = SLOT_MAP[card.type] || 'paw';
+    if (card.type === '耳环') {
+      slot = earCount % 2 === 0 ? 'ear' : 'ear2';
+      earCount++;
+    }
+    const el = document.createElement('div');
+    el.className = `equip-overlay slot-${slot}`;
+    el.innerHTML = `<img src="${image}" alt="${card.name}">`;
+    wrap.appendChild(el);
+  });
+}
+
+// ============================================================
+// 8. CAT DETAIL + INTERACTIONS
+// ============================================================
+let currentCatId = null;
+
+function openCatModal(catId) {
+  if (isFrozen()) { showToast('⏳ 被保安赶出店外，请稍等...'); return; }
+  const cat = CATS.find(c => c.id === catId);
+  if (!cat) return;
+  currentCatId = catId;
+  $('catModalTitle').textContent = `${cat.name} · ${cat.role}`;
+  $('catModalImg').src = cat.img;
+  $('catModalName').textContent = cat.name;
+  $('catModalRole').textContent = cat.role;
+  $('catModalDesc').textContent = cat.desc;
+  renderCatModalEquips();
+  renderCatModalOverlay();
+  renderUseList();
+  updateMoodBar(catId);
+  openModal('catModal');
+}
+
+// R18/R39: 猫详情页大图上叠加真实佩戴的饰品装饰
+function renderCatModalOverlay() {
+  const box = $('catImgBox');
+  if (!box) return;
+  box.querySelectorAll('.equip-overlay').forEach(el => el.remove());
+  const equips = state.catEquips[currentCatId] || [];
+  let earCount = 0;
+  equips.forEach(key => {
+    const [category, id] = key.split('_');
+    const card = DEFAULT_CARDS[category].find(c => c.id === id);
+    if (!card) return;
+    const image = getWearSVG(card);
+    let slot = SLOT_MAP[card.type] || 'paw';
+    if (card.type === '耳环') {
+      slot = earCount % 2 === 0 ? 'ear' : 'ear2';
+      earCount++;
+    }
+    const el = document.createElement('div');
+    el.className = `equip-overlay slot-${slot}`;
+    el.innerHTML = `<img src="${image}" alt="${card.name}">`;
+    box.appendChild(el);
+  });
+}
+
+// 猫详情页的饰品列表
+function renderCatModalEquips() {
+  const list = $('equipList');
+  list.innerHTML = '';
+  const ownedCards = getAllCards().filter(c => c.owned);
+  if (ownedCards.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-light);padding:8px 0">还没有饰品，先去抽卡吧~</div>';
+    return;
+  }
+  ownedCards.forEach(card => {
+    const key = `${card.category}_${card.id}`;
+    const on = (state.catEquips[currentCatId] || []).includes(key);
+    const item = document.createElement('div');
+    item.className = `equip-item ${on ? 'on' : ''}`;
+    item.innerHTML = `<img src="${card.image}" alt="${card.displayName}" style="filter:${card.isCustom ? '' : getCardFilter(card)}" onerror="this.style.display='none'"><div class="eq-name">${card.displayName}</div>`;
+    item.addEventListener('click', () => toggleCatEquip(currentCatId, key));
+    list.appendChild(item);
+  });
+}
+
+function toggleCatEquip(catId, key) {
+  const equips = state.catEquips[catId] || [];
+  const idx = equips.indexOf(key);
+  if (idx >= 0) {
+    equips.splice(idx, 1);
+    showToast('已取下饰品');
+  } else {
+    if (equips.length >= 3) {
+      showToast('最多只能佩戴 3 件饰品哦，先取下一件吧~');
+      return;
+    }
+    // 饰品唯一性：同一件饰品只能戴在一只猫身上，先自动从其他猫取下
+    let movedFrom = null;
+    for (const cid of Object.keys(state.catEquips)) {
+      if (cid === catId) continue;
+      const arr = state.catEquips[cid] || [];
+      const i = arr.indexOf(key);
+      if (i >= 0) {
+        arr.splice(i, 1);
+        movedFrom = cid;
+        break;
+      }
+    }
+    equips.push(key);
+    if (movedFrom) {
+      const cat = CATS.find(c => c.id === movedFrom);
+      showToast(`已从${cat ? cat.name : '另一只猫'}身上取下，戴到这只猫猫身上！心情 +5`);
+    } else {
+      showToast('已佩戴到猫猫身上！心情 +5');
+    }
+    state.catMoods[catId] = Math.min(100, (state.catMoods[catId] || 0) + 5);
+  }
+  state.catEquips[catId] = equips;
+  saveState();
+  renderCatModalEquips();
+  renderCatModalOverlay();
+  renderCats();          // 重新渲染所有猫身上的饰品（含被取下的那只）
+  renderBackpack();
+  updateMoodBar(catId);
+  // 成就检测：心情类
+  checkAchievements();
+}
+
+// 摸头（带连续摸头逻辑）
+function petCat() {
+  if (isFrozen()) { showToast('⏳ 被保安赶出店外，请稍等...'); return; }
+  const catId = currentCatId;
+  const cat = CATS.find(c => c.id === catId);
+  if (!cat) return;
+
+  // 每日摸头计数（每日任务）
+  state.dailyPetCount = (state.dailyPetCount || 0) + 1;
+  saveState();
+
+  // 连续摸头计数
+  if (state.lastPetCat === catId) {
+    state.petStreak[catId] = (state.petStreak[catId] || 0) + 1;
+  } else {
+    state.lastPetCat = catId;
+    state.petStreak = { [catId]: 1 };
+  }
+  const streak = state.petStreak[catId];
+
+  // 土豆连续摸5次 → 被赶出
+  if (catId === 'tudou' && streak >= 5) {
+    state.petStreak[catId] = 0;
+    saveState();
+    triggerKickOut();
+    return;
+  }
+
+  // 连续摸3次 → 猫躲开
+  if (streak >= 3) {
+    state.petStreak[catId] = 0;
+    saveState();
+    const img = $('catModalImg');
+    img.classList.remove('dodge'); void img.offsetWidth; img.classList.add('dodge');
+    const dodgeLines = {
+      ahuang:'哎呀，别摸啦，店长要忙啦！',
+      tudou:'喂！别得寸进尺！',
+      dengdeng:'...（默默后退一步）',
+      chuqi:'嘻嘻，人家会害羞的~',
+      miemie:'咩咩要躲起来啦！',
+    };
+    showToast(`${cat.name}: ${dodgeLines[catId] || '别摸啦！'}`);
+    return;
+  }
+
+  state.catMoods[catId] = Math.min(100, (state.catMoods[catId] || 0) + 3);
+  saveState();
+  updateMoodBar(catId);
+  AudioEngine.sfxPet();
+  const img = $('catModalImg');
+  img.classList.remove('talk'); void img.offsetWidth; img.classList.add('talk');
+  const reactions = ['呼噜呼噜~','好舒服呀~','喵呜！','蹭蹭你~'];
+  showToast(`${cat.name}: ${reactions[Math.floor(Math.random()*reactions.length)]} 心情 +3`);
+  // 成就：今日摸头记录 + 心情成就检测
+  if (!state.petAllToday) state.petAllToday = {};
+  state.petAllToday[catId] = true;
+  saveState();
+  checkAchievements();
+}
+
+function talkCat() {
+  if (isFrozen()) { showToast('⏳ 被保安赶出店外，请稍等...'); return; }
+  const catId = currentCatId;
+  const cat = CATS.find(c => c.id === catId);
+  if (!cat) return;
+  const line = cat.lines[Math.floor(Math.random() * cat.lines.length)];
+  showToast(`${cat.name}: ${line}`);
+  state.catMoods[catId] = Math.min(100, (state.catMoods[catId] || 0) + 1);
+  saveState();
+  updateMoodBar(catId);
+  checkAchievements();
+  AudioEngine.sfxTalk();
+}
+
+// 心情值更新
+function updateMoodBar(catId) {
+  const mood = state.catMoods[catId] || 0;
+  $('catModalMood').style.width = Math.min(mood, 100) + '%';
+  const numEl = $('catModalMoodNum');
+  if (numEl) numEl.textContent = Math.round(mood);
+}
+
+// 今日玩具使用次数
+function getTodayToyUsage(catId) {
+  const today = new Date().toDateString();
+  const usage = state.catToyUsage[catId] || [];
+  return usage.filter(ts => new Date(ts).toDateString() === today).length;
+}
+
+// 平均心情（影响NPC顾客消费）
+function getAvgMood() {
+  const moods = Object.values(state.catMoods);
+  return moods.length ? moods.reduce((a,b) => a+b, 0) / moods.length : 50;
+}
+
+// 渲染可使用的用品
+function renderUseList() {
+  const list = $('useList');
+  list.innerHTML = '';
+  const todayCount = getTodayToyUsage(currentCatId);
+  const remaining = Math.max(0, 5 - todayCount);
+  $('useLimitTip').textContent = remaining > 0
+    ? `今日还可使用 ${remaining} 次（每天最多 5 次）`
+    : `今日 5 次已用完，明天再来吧~`;
+
+  let hasAny = false;
+  SUPPLY_ITEMS.forEach(item => {
+    const count = state.inventory[item.id] || 0;
+    if (count <= 0) return;
+    hasAny = true;
+    const el = document.createElement('div');
+    el.className = 'use-item' + (remaining <= 0 ? ' disabled' : '');
+    el.innerHTML = `
+      <span class="ui-emoji">${item.emoji}</span>
+      <div class="ui-name">${item.name}</div>
+      <div class="ui-count">×${count}</div>
+      <div class="ui-effect">心情+${item.mood}</div>`;
+    el.addEventListener('click', () => useItem(item));
+    list.appendChild(el);
+  });
+  if (!hasAny) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-light);padding:8px 0">背包里还没有用品，去猫猫用品店买点吧~</div>';
+  }
+}
+
+// 使用用品：库存-1，心情提升
+function useItem(item) {
+  if (isFrozen()) { showToast('⏳ 被保安赶出店外，请稍等...'); return; }
+  const catId = currentCatId;
+  const count = state.inventory[item.id] || 0;
+  if (count <= 0) { showToast('库存不足啦~'); return; }
+  const todayCount = getTodayToyUsage(catId);
+  if (todayCount >= 5) {
+    showToast('今天已经玩过 5 次啦，明天再来吧~');
+    return;
+  }
+  state.inventory[item.id] = count - 1;
+  if (!state.catToyUsage[catId]) state.catToyUsage[catId] = [];
+  state.catToyUsage[catId].push(Date.now());
+  state.catMoods[catId] = Math.min(100, (state.catMoods[catId] || 0) + item.mood);
+  saveState();
+  AudioEngine.sfxUse();
+  const img = $('catModalImg');
+  img.classList.remove('talk'); void img.offsetWidth; img.classList.add('talk');
+  showToast(`${item.useLine} 心情 +${item.mood}`);
+  renderUseList();
+  renderShop('supplyGrid', SUPPLY_ITEMS);
+  renderShop('shopGrid', SUPPLY_ITEMS);
+  updateMoodBar(catId);
+  // R37: 展示用品动画卡片
+  showActivityCard(catId, item.activity || 'eat');
+  // 成就检测：心情类
+  checkAchievements();
+}
+
+// R37: 展示用品动画卡片（5猫×3类，每类3版文案轮播）
+let actTextTimer = null;
+function showActivityCard(catId, activity) {
+  const cat = CATS.find(c => c.id === catId);
+  if (!cat) return;
+  const act = SUPPLY_ACTIVITY[activity] || SUPPLY_ACTIVITY.eat;
+  const card = SUPPLY_CARDS.find(c => c.catId === catId && c.activity === activity);
+  const lines = card ? card.lines : [act.label];
+  $('actCatImg').src = cat.img;
+  $('actCatImg').className = 'act-cat ' + activity;
+  $('actEmoji').textContent = act.emoji;
+  $('actEmoji').className = 'act-emoji ' + activity;
+  $('actZzz').style.display = activity === 'rest' ? 'block' : 'none';
+  $('actLabel').textContent = `${cat.name} · ${act.label}`;
+  let idx = 0;
+  $('actText').textContent = lines[0];
+  if (actTextTimer) clearInterval(actTextTimer);
+  actTextTimer = setInterval(() => {
+    idx = (idx + 1) % lines.length;
+    const el = $('actText');
+    el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    el.textContent = lines[idx];
+  }, 1800);
+  $('activityOverlay').classList.add('open');
+}
+
+function closeActivityCard() {
+  if (actTextTimer) { clearInterval(actTextTimer); actTextTimer = null; }
+  $('activityOverlay').classList.remove('open');
+}
+
+// 被赶出事件：冻结20秒
+function triggerKickOut() {
+  closeModal('catModal');
+  state.frozenUntil = Date.now() + 20000;
+  saveState();
+  AudioEngine.sfxKick();
+  $('kickOverlay').classList.add('open');
+  let remain = 20;
+  $('kickTimer').textContent = remain;
+  const timer = setInterval(() => {
+    remain--;
+    $('kickTimer').textContent = remain;
+    if (remain <= 0) {
+      clearInterval(timer);
+      $('kickOverlay').classList.remove('open');
+      showToast('好啦好啦，土豆消气了，进来吧~');
+    }
+  }, 1000);
+}
+
+// ============================================================
+// 9. SHOPS
+// ============================================================
+function renderShop(gridId, items) {
+  const grid = $(gridId);
+  grid.innerHTML = '';
+  items.forEach(item => {
+    const count = state.inventory[item.id] || 0;
+    const el = document.createElement('div');
+    el.className = 'shop-item';
+    el.innerHTML = `
+      <span class="item-emoji">${item.emoji}</span>
+      <div class="item-name">${item.name}</div>
+      <div class="item-price">${item.price}🪙</div>
+      <div class="item-desc">${item.desc}</div>
+      ${count > 0 ? `<div class="owned-badge">库存 ×${count}</div>` : ''}
+      <button class="buy-btn">购买</button>`;
+    el.querySelector('.buy-btn').addEventListener('click', () => buyItem(item, gridId));
+    grid.appendChild(el);
+  });
+}
+
+function buyItem(item, gridId) {
+  if (isFrozen()) { showToast('⏳ 被保安赶出店外，请稍等...'); return; }
+  if (state.coins < item.price) { showToast('金币不够，去经营店铺赚金币吧~'); return; }
+  addCoins(-item.price);
+  state.inventory[item.id] = (state.inventory[item.id] || 0) + 1;
+  state.totalSpent += item.price;
+  addRevenue(item.price);
+  AudioEngine.sfxBuy();
+  showToast(`购买了 ${item.name}！库存 +1`);
+  renderShop(gridId || 'supplyGrid', SUPPLY_ITEMS);
+  renderShop('shopGrid', SUPPLY_ITEMS);
+}
+
+// ============================================================
+// 10. GACHA
+// ============================================================
+function getAllCards() {
+  const result = [];
+  for (const cat of ['mbti','constellation']) {
+    for (const card of DEFAULT_CARDS[cat]) {
+      const cfg = state.cardConfigs[`${cat}_${card.id}`] || {};
+      const owned = state.backpack.some(o => o.category === cat && o.id === card.id);
+      result.push({
+        ...card, category: cat,
+        displayName: cfg.customName || card.name,
+        displayLabel: cfg.customLabel || card.label,
+        image: cfg.image || getCardImage({ ...card, category: cat }),
+        hue: card.hue || 0,
+        isCustom: !!cfg.image,
+        owned
+      });
+    }
+  }
+  return result;
+}
+
+function drawCard() {
+  const pool = [];
+  for (const cat of ['mbti','constellation']) {
+    for (const card of DEFAULT_CARDS[cat]) pool.push({ ...card, category: cat });
+  }
+  const rarities = ['N','R','SR','SSR'];
+  const weights = [50, 30, 15, 5];
+  const total = weights.reduce((a,b) => a+b, 0);
+  let r = Math.random() * total;
+  let pickedRarity = 'N';
+  for (let i = 0; i < rarities.length; i++) {
+    r -= weights[i];
+    if (r <= 0) { pickedRarity = rarities[i]; break; }
+  }
+  const candidates = pool.filter(c => c.rarity === pickedRarity);
+  return candidates.length ? candidates[Math.floor(Math.random()*candidates.length)] : pool[0];
+}
+
+function drawMulti(count) {
+  const cards = [];
+  for (let i = 0; i < count; i++) cards.push(drawCard());
+  if (count >= 10) {
+    const hasSR = cards.some(c => c.rarity === 'SR' || c.rarity === 'SSR');
+    if (!hasSR) {
+      const idx = cards.findIndex(c => c.rarity === 'N');
+      if (idx >= 0) cards[idx] = drawCard();
+    }
+  }
+  return cards;
+}
+
+function addToBackpack(card) {
+  const existing = state.backpack.find(o => o.category === card.category && o.id === card.id);
+  if (existing) {
+    existing.count += 1;
+    addPoints(5);
+    return false;
+  } else {
+    state.backpack.push({ category: card.category, id: card.id, count: 1 });
+    return true;
+  }
+}
+
+function renderGachaResult(cards) {
+  const container = $('gachaResult');
+  container.innerHTML = '';
+  cards.forEach((card, idx) => {
+    const cfg = state.cardConfigs[`${card.category}_${card.id}`] || {};
+    const image = cfg.image || getCardImage({ ...card, category: card.category });
+    const filter = cfg.image ? '' : getCardFilter({ ...card, category: card.category });
+    const name = cfg.customName || card.name;
+    const label = cfg.customLabel || card.label;
+    const wrapper = document.createElement('div');
+    wrapper.className = `gacha-card rarity-${card.rarity}`;
+    wrapper.innerHTML = `
+      <div class="gacha-card-inner">
+        <div class="gacha-card-front"></div>
+        <div class="gacha-card-back rarity-${card.rarity}">
+          <img src="${image}" alt="${name}" style="filter:${filter}" onerror="this.style.display='none'">
+          <div class="c-name">${name}</div>
+          <div class="c-label">${label}</div>
+          <div style="font-size:8px;color:var(--text-light);margin-top:2px">${card.rarity}</div>
+        </div>
+      </div>`;
+    container.appendChild(wrapper);
+    setTimeout(() => wrapper.classList.add('flipped'), 100 + idx * 200);
+  });
+}
+
+function showReveal(card) {
+  const cfg = state.cardConfigs[`${card.category}_${card.id}`] || {};
+  const image = cfg.image || getCardImage({ ...card, category: card.category });
+  const name = cfg.customName || card.name;
+  const label = cfg.customLabel || card.label;
+  const quote = cfg.customDesc || card.quote;
+  $('revealImg').src = image;
+  $('revealImg').style.filter = cfg.image ? '' : getCardFilter({ ...card, category: card.category });
+  $('revealName').textContent = name;
+  $('revealLabel').textContent = `${label} · ${card.type} · ${card.rarity}`;
+  $('revealQuote').textContent = `「${quote}」`;
+  $('revealCard').style.borderColor = card.rarity === 'SSR' ? 'var(--gold)' : (card.rarity === 'SR' ? 'var(--purple)' : (card.rarity === 'R' ? 'var(--blue)' : '#bbb'));
+  $('revealOverlay').classList.add('open');
+  confettiBurst();
+  AudioEngine.sfxDiamond();
+}
+
+function closeReveal() { restoreRevealCard(); $('revealOverlay').classList.remove('open'); }
+
+function doGachaSingle() {
+  if (isFrozen()) { showToast('⏳ 被保安赶出店外，请稍等...'); return; }
+  if (state.points < 20) { showToast('钻石不够 (需要20💎)'); return; }
+  addPoints(-20);
+  state.totalSpent += 20;
+  addRevenue(20);
+  if (Math.random() < 0.08) {
+    const diamondReward = 30 + Math.floor(Math.random() * 3) * 10;
+    addPoints(diamondReward);
+    showDiamondReveal(diamondReward);
+    return;
+  }
+  const card = drawCard();
+  addToBackpack(card);
+  saveState();
+  renderBackpack();
+  AudioEngine.sfxGacha();
+  showReveal(card);
+  // 成就检测：消费类
+  checkAchievements();
+}
+
+function doGachaMulti() {
+  if (isFrozen()) { showToast('⏳ 被保安赶出店外，请稍等...'); return; }
+  if (state.points < 180) { showToast('钻石不够 (需要180💎)'); return; }
+  addPoints(-180);
+  state.totalSpent += 180;
+  addRevenue(180);
+  const cards = drawMulti(10);
+  let newCount = 0;
+  cards.forEach(c => { if (addToBackpack(c)) newCount++; });
+  saveState();
+  renderBackpack();
+  renderGachaResult(cards);
+  showToast(newCount > 0 ? `十连完成！新收集 ${newCount} 件` : '十连完成！都是重复的，已转化为钻石');
+  // 成就检测：消费类
+  checkAchievements();
+}
+
+let isDiamondReveal = false;
+function showDiamondReveal(amount) {
+  isDiamondReveal = true;
+  $('revealImg').style.display = 'none';
+  $('revealCard').innerHTML = '<div class="reveal-diamond">💎</div>';
+  $('revealCard').style.borderColor = 'var(--gold)';
+  $('revealName').textContent = '幸运钻石！';
+  $('revealLabel').textContent = '直接获得钻石奖励';
+  $('revealQuote').textContent = `「恭喜获得 ${amount} 钻石」`;
+  $('revealOverlay').classList.add('open');
+  confettiBurst();
+}
+function restoreRevealCard() {
+  if (!isDiamondReveal) return;
+  isDiamondReveal = false;
+  $('revealCard').innerHTML = '<img id="revealImg" src="" alt="饰品"><div class="rarity-glow"></div>';
+  $('revealImg').style.display = '';
+}
+
+// ============================================================
+// 11. BACKPACK
+// ============================================================
+let bpFilter = 'all';
+
+function renderBackpack() {
+  // 猫用品标签：展示背包里的猫用品
+  if (bpFilter === 'supplies') {
+    renderSuppliesBackpack();
+    return;
+  }
+  const allCards = getAllCards();
+  const total = allCards.length;
+  const owned = allCards.filter(c => c.owned).length;
+  $('albumProgress').style.width = (owned / total * 100) + '%';
+  $('albumProgressText').textContent = `${owned}/${total}`;
+
+  const filtered = bpFilter === 'all' ? allCards : allCards.filter(c => c.category === bpFilter);
+  const grid = $('backpackGrid');
+  grid.innerHTML = '';
+  filtered.forEach(card => {
+    const item = document.createElement('div');
+    const bp = state.backpack.find(o => o.category === card.category && o.id === card.id);
+    const equippedAnywhere = Object.values(state.catEquips).some(arr => arr.includes(`${card.category}_${card.id}`));
+    item.className = `bp-item ${equippedAnywhere ? 'equipped' : ''}`;
+    item.innerHTML = `
+      <img src="${card.image}" alt="${card.displayName}" style="filter:${card.isCustom ? '' : getCardFilter(card)}" onerror="this.style.display='none'">
+      <div class="bp-name">${card.owned ? card.displayName : '???'}</div>
+      <div class="bp-count">${card.owned ? (bp ? `×${bp.count}` : '') : '未获得'}</div>`;
+    if (card.owned) {
+      item.addEventListener('click', () => openEditModal(card.category, card.id));
+    }
+    grid.appendChild(item);
+  });
+}
+
+// 渲染背包中的猫用品（鱼干、玩具、猫窝等）
+function renderSuppliesBackpack() {
+  const ownedCount = SUPPLY_ITEMS.filter(i => (state.inventory[i.id] || 0) > 0).length;
+  $('albumProgress').style.width = (ownedCount / SUPPLY_ITEMS.length * 100) + '%';
+  $('albumProgressText').textContent = `${ownedCount}/${SUPPLY_ITEMS.length} 种用品`;
+  const grid = $('backpackGrid');
+  grid.innerHTML = '';
+  SUPPLY_ITEMS.forEach(item => {
+    const count = state.inventory[item.id] || 0;
+    const el = document.createElement('div');
+    el.className = 'bp-item' + (count > 0 ? '' : ' bp-locked');
+    el.innerHTML = `
+      <div class="bp-supply-emoji">${item.emoji}</div>
+      <div class="bp-name">${item.name}</div>
+      <div class="bp-count">${count > 0 ? `×${count}` : '未拥有'}</div>
+      <div class="bp-desc">${item.desc}</div>`;
+    if (count > 0) {
+      el.addEventListener('click', () => showToast(`使用「${item.name}」：点击对应猫猫即可喂食~`));
+    }
+    grid.appendChild(el);
+  });
+}
+
+// ============================================================
+// 11.5 ALBUM (相册)
+// ============================================================
+const ALBUM_PHOTOS = [
+  { id: 1, title: '全家福', desc: '五只小猫的温馨全家福', img: 'assets/album-family.jpg' },
+  { id: 2, title: '饰品店开业合照', desc: '大猫饰品店开业纪念', img: 'assets/album-accessory.jpg' },
+  { id: 3, title: '猫用品店开业合照', desc: '猫猫用品店开业纪念', img: 'assets/album-supply.jpg' },
+  { id: 4, title: '???', desc: '更多照片，请努力收集吧，', img: null },
+  { id: 5, title: '???', desc: '更多照片，请努力收集吧，', img: null },
+];
+
+function renderAlbum() {
+  const grid = $('albumGrid');
+  grid.innerHTML = '';
+  ALBUM_PHOTOS.forEach(photo => {
+    const el = document.createElement('div');
+    if (photo.img) {
+      el.className = 'album-item';
+      el.innerHTML = `<img src="${photo.img}" alt="${photo.title}" onerror="this.parentElement.classList.add('placeholder');this.parentElement.innerHTML='<div class=&quot;plus&quot;>➕</div><div class=&quot;al-hint&quot;>${photo.desc}</div>'"><div class="al-title">${photo.title}</div>`;
+      el.addEventListener('click', () => openAlbumView(photo));
+    } else {
+      el.className = 'album-item placeholder';
+      el.innerHTML = `<div class="plus">➕</div><div class="al-hint">${photo.desc}</div>`;
+    }
+    grid.appendChild(el);
+  });
+}
+
+function openAlbumView(photo) {
+  $('albumViewImg').src = photo.img;
+  $('albumViewTitle').textContent = photo.title;
+  $('albumViewDesc').textContent = photo.desc;
+  $('albumView').classList.add('open');
+  // 动画特效：飘落星光 + 上升爱心
+  const sparkleEmojis = ['✨','⭐','💫','🌟'];
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('div');
+    s.className = 'av-sparkle';
+    s.textContent = sparkleEmojis[Math.floor(Math.random() * sparkleEmojis.length)];
+    s.style.left = (Math.random() * 90 + 5) + '%';
+    s.style.top = (Math.random() * 80 + 10) + '%';
+    s.style.fontSize = (14 + Math.random() * 14) + 'px';
+    s.style.animationDelay = (Math.random() * 1) + 's';
+    $('albumView').appendChild(s);
+    setTimeout(() => s.remove(), 2500);
+  }
+  const heartEmojis = ['💖','💕','🐾','💛'];
+  for (let i = 0; i < 6; i++) {
+    const h = document.createElement('div');
+    h.className = 'av-heart';
+    h.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+    h.style.left = (Math.random() * 90 + 5) + '%';
+    h.style.bottom = (Math.random() * 30 + 10) + '%';
+    h.style.animationDelay = (Math.random() * 1.2) + 's';
+    $('albumView').appendChild(h);
+    setTimeout(() => h.remove(), 3000);
+  }
+  if (typeof AudioEngine !== 'undefined' && AudioEngine.sfxDiamond) AudioEngine.sfxDiamond();
+}
+
+function closeAlbumView() {
+  $('albumView').classList.remove('open');
+  document.querySelectorAll('.av-sparkle').forEach(el => el.remove());
+}
+
+// ============================================================
+// 12. NEWBIE GIFT + NPC CUSTOMERS
+// ============================================================
+function claimNewbieGift() {
+  const btn = $('btnNewbie');
+  if (state.newbieClaimed) {
+    showToast('新手礼包已领取过了~');
+    return;
+  }
+  state.newbieClaimed = true;
+  addPoints(100);
+  saveState();
+  if (btn) btn.style.display = 'none';
+  const badge = $('fnNewbieBadge');
+  if (badge) badge.style.display = 'none';
+  confettiBurst();
+  showToast('🎁 新手礼包：+100 钻石！');
+}
+
+// NPC 顾客（右上角提示）
+const NPC_CUSTOMER_TEMPLATES = [
+  { emoji:'👩', prefix:'一位美丽的女士', suffix:'满意地离开了' },
+  { emoji:'👨', prefix:'一位优雅的男士', suffix:'开心地走了' },
+  { emoji:'👧', prefix:'一位可爱的小姐', suffix:'爱不释手' },
+  { emoji:'👦', prefix:'一位阳光的少年', suffix:'心满意足' },
+  { emoji:'🧓', prefix:'一位慈祥的老奶奶', suffix:'赞不绝口' },
+  { emoji:'👵', prefix:'一位和蔼的老爷爷', suffix:'连连称赞' },
+  { emoji:'🧑‍🦰', prefix:'一位时髦的女士', suffix:'很满意这次购物' },
+  { emoji:'👨‍🦱', prefix:'一位帅气的男士', suffix:'果断入手' },
+  { emoji:'👩‍🦳', prefix:'一位温柔的女士', suffix:'笑逐颜开' },
+  { emoji:'🧑', prefix:'一位神秘的顾客', suffix:'默默买走' },
+];
+
+const NPC_PURCHASE_ITEMS = [
+  { name:'白羊座的珍珠项链', type:'accessory' },
+  { name:'双子座的串珠耳环', type:'accessory' },
+  { name:'狮子座的星辰手链', type:'accessory' },
+  { name:'金牛座的水晶吊坠', type:'accessory' },
+  { name:'天秤座的琉璃耳饰', type:'accessory' },
+  { name:'射手座的彩虹脚链', type:'accessory' },
+  { name:'小猫都爱的小鱼干', type:'supply' },
+  { name:'手工制作的猫罐头', type:'supply' },
+  { name:'软绵绵的猫窝垫子', type:'supply' },
+  { name:'五彩缤纷的逗猫棒', type:'supply' },
+  { name:'毛茸茸的毛线球', type:'supply' },
+  { name:'香喷喷的牛奶杯', type:'supply' },
+];
+
+let saleNoticeTimer = null;
+let isResting = false;  // 午休状态（全局，供 spawnNpcCustomer 检查）
+
+function showSaleNotice(text, gain) {
+  const notice = $('saleNotice');
+  $('snText').textContent = text;
+  $('snGain').textContent = gain;
+  notice.classList.add('show');
+  clearTimeout(saleNoticeTimer);
+  saleNoticeTimer = setTimeout(() => notice.classList.remove('show'), 4000);
+}
+
+function spawnNpcCustomer() {
+  if (isFrozen()) return;
+  if (isResting) return;  // 午休期间暂停营业
+  const tmpl = NPC_CUSTOMER_TEMPLATES[Math.floor(Math.random() * NPC_CUSTOMER_TEMPLATES.length)];
+  const purchase = NPC_PURCHASE_ITEMS[Math.floor(Math.random() * NPC_PURCHASE_ITEMS.length)];
+  // 心情影响价格
+  const avgMood = getAvgMood();
+  const basePrice = 15 + Math.floor(Math.random() * 15);
+  const moodBonus = Math.floor(avgMood / 20);
+  // 营收等级倍率 × 装修加成（营收等级由累计营业额自动判定）
+  const lvBonus = getRevenueLevelInfo().bonus * getDecorBonus();
+  const reward = Math.round((basePrice + moodBonus) * lvBonus);
+  // 店铺营收 + 用户金币（被动收入）
+  addRevenue(reward);
+  addCoins(reward);
+  state.todayCustomers++;
+  state.todaySales++;
+  // 显示提示
+  showSaleNotice(
+    `${tmpl.prefix}购买${purchase.name}，${tmpl.suffix}`,
+    `💰 店铺收入 +${reward} 金币`
+  );
+}
+
+// ============================================================
+// 13. CAN OPENING EVENTS
+// ============================================================
+const CAN_THRESHOLD = 200;
+const REVENUE_CAN_THRESHOLD = 500;  // 营收累计500→开罐头
+
+// 旧版抽卡消费200开罐头（保留）
+function checkCanEvent() {
+  const expected = Math.floor(state.totalSpent / CAN_THRESHOLD);
+  if (expected > state.canCount) {
+    state.canCount = expected;
+    saveState();
+    showCanEvent('🍱 开罐头时间到！', '累计消费达标，奖励员工们开罐罐啦！');
+  }
+}
+
+// 营收累计500开罐头
+function checkRevenueCanEvent() {
+  const expected = Math.floor(state.totalRevenue / REVENUE_CAN_THRESHOLD);
+  if (expected > state.revenueCanCount) {
+    state.revenueCanCount = expected;
+    saveState();
+    // 前置提示：先说明触发原因，再弹窗
+    showToast(`🎉 店铺营收累计满 ${REVENUE_CAN_THRESHOLD} 元！奖励员工们开罐罐啦~`);
+    setTimeout(() => {
+      showCanEvent(
+        '💰 营收达标！',
+        `店铺当日收入已到 ${state.dailyRevenue} 元，奖励员工们开罐罐啦！`
+      );
+    }, 700);
+  }
+}
+
+function showCanEvent(title, subTitle) {
+  $('canTitle').textContent = title;
+  $('canSubTitle').textContent = subTitle;
+  $('canEvent').classList.add('open');
+  confettiBurst();
+  AudioEngine.sfxCan();
+  const wrap = $('canEvent');
+  const texts = ['呀咪呀咪','好吃~','喵呜~','再来一罐！','幸福的味道'];
+  texts.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'yami-text';
+    el.textContent = t;
+    // 动态字样只出现在图片下方区域，避免遮挡猫脸
+    el.style.left = (8 + Math.random() * 78) + '%';
+    el.style.top = (58 + Math.random() * 30) + '%';
+    el.style.fontSize = (22 + Math.random() * 14) + 'px';
+    el.style.animationDelay = (i * 0.3) + 's';
+    wrap.appendChild(el);
+  });
+}
+
+function closeCanEvent() {
+  $('canEvent').classList.remove('open');
+  document.querySelectorAll('.yami-text').forEach(el => el.remove());
+}
+
+// ============================================================
+// 13.5 LEDGER SYSTEM (账本结算 + 离线收益)
+// ============================================================
+
+// 离线收益：按离开时长与店铺平均心情结算（最多按8小时）
+// 返回 { coins, minutes }，minutes 为离开分钟数
+function computeOfflineRevenue() {
+  const now = Date.now();
+  const last = state.lastVisitTime || now;
+  const elapsed = now - last;
+  const minutes = Math.floor(elapsed / 60000);
+  state.lastVisitTime = now;
+  saveState();
+  if (elapsed < 5 * 60 * 1000) return { coins: 0, minutes };  // 离开不足5分钟不计
+  const hours = Math.min(elapsed / 3600000, 8);   // 封顶8小时
+  const avgMood = getAvgMood();
+  const rate = 25 + Math.floor(avgMood / 5);      // 每小时 25~45 金币
+  return { coins: Math.floor(hours * rate), minutes };
+}
+
+// 货币获取途径说明
+const CURRENCY_INFO = {
+  diamond: {
+    title: '💎 钻石',
+    emoji: '💎',
+    desc: '钻石可以通过新手礼包、每日任务、签到和抽卡获得，快去收集吧~',
+    ways: ['新手礼包首次领取 +100 钻石', '每日任务达成奖励', '每日签到奖励', '抽卡抽中稀有卡', '重复饰品回收 +5 钻石']
+  },
+  coin: {
+    title: '🪙 金币',
+    emoji: '🪙',
+    desc: '金币可以通过每日任务、签到、NPC 消费和离线收益获得，多开店赚更多哦！',
+    ways: ['每日任务达成奖励', '每日签到奖励', 'NPC 顾客进店消费', '离线期间猫咪自动经营', '新手礼包赠送']
+  }
+};
+
+function openCurrencyInfo(type) {
+  const info = CURRENCY_INFO[type];
+  if (!info) return;
+  $('currencyInfoTitle').textContent = info.title;
+  $('currencyInfoBody').innerHTML = `
+    <div class="ci-emoji">${info.emoji}</div>
+    <div class="ci-desc">${info.desc}</div>
+    <div class="ci-ways">${info.ways.map(w => `<div class="ci-way"><span class="ci-dot"></span>${w}</div>`).join('')}</div>`;
+  openModal('currencyInfoModal');
+}
+
+// 打开账本并渲染今日数据 + 历史结算
+function openLedger() {
+  $('ledgerTodayCustomers').textContent = state.todayCustomers;
+  $('ledgerTodaySales').textContent = state.todaySales;
+  $('ledgerTodayRevenue').textContent = state.dailyRevenue;
+  $('ledgerTotalRevenue').textContent = state.totalRevenue;
+  const list = $('ledgerHistoryList');
+  list.innerHTML = '';
+  if (!state.settleHistory.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-light);padding:14px 0;text-align:center">还没有历史结算记录，明天见~</div>';
+  } else {
+    state.settleHistory.forEach(rec => {
+      const el = document.createElement('div');
+      el.className = 'ledger-row';
+      el.innerHTML = `
+        <span class="lr-date">${rec.date}</span>
+        <span class="lr-mid">👥 ${rec.customers} 客 · 🛍️ ${rec.sales} 件</span>
+        <span class="lr-rev">+${rec.revenue} 🪙</span>`;
+      list.appendChild(el);
+    });
+  }
+  openModal('ledgerModal');
+}
+
+// ============================================================
+// DAILY TASKS (每日任务)
+// ============================================================
+function getDailyTaskProgress() {
+  return {
+    checkin: state.lastCheckinDate === getCatDateKey() ? 1 : 0,
+    pet: state.dailyPetCount || 0,
+    revenue: state.dailyRevenue,
+    customers: state.todayCustomers,
+  };
+}
+
+function openDailyTasks() {
+  const p = getDailyTaskProgress();
+  const tasks = [
+    { ico:'📅', name:'今日签到', desc:'完成每日签到', cur:p.checkin, need:1, reward:'+20💎 +50🪙', key:'checkin' },
+    { ico:'🖐️', name:'摸摸小猫', desc:'摸头互动 5 次', cur:p.pet, need:5, reward:'+10🪙', key:'pet' },
+    { ico:'💰', name:'今日营收', desc:'今日营收达到 100', cur:p.revenue, need:100, reward:'+30🪙', key:'revenue' },
+    { ico:'👥', name:'接待客人', desc:'接待 3 位顾客', cur:p.customers, need:3, reward:'+15🪙', key:'customers' },
+  ];
+  const list = $('dailyTaskList');
+  list.innerHTML = '';
+  let doneCount = 0;
+  tasks.forEach(t => {
+    const done = t.cur >= t.need;
+    if (done) doneCount++;
+    const el = document.createElement('div');
+    el.className = 'task-item' + (done ? ' done' : '');
+    el.innerHTML = `
+      <span class="ti-ico">${t.ico}</span>
+      <div class="ti-info">
+        <div class="ti-name">${t.name}</div>
+        <div class="ti-desc">${t.desc}</div>
+        <div class="ti-progress">${Math.min(t.cur, t.need)}/${t.need}</div>
+      </div>
+      <span class="ti-reward">${t.reward}</span>
+      <span class="ti-state ${done ? 'claim' : 'locked'}">${done ? '✓ 已完成' : '进行中'}</span>`;
+    list.appendChild(el);
+  });
+  $('dailyTaskTip').textContent = doneCount >= 4 ? '今日任务全部完成，明天再来吧~ 🎉' : '每日任务每天 0 点刷新，完成后自动结算奖励';
+  openModal('dailyTasksModal');
+}
+
+// ============================================================
+// SIDE QUESTS (支线任务及进展)
+// ============================================================
+function openSideQuests() {
+  const quests = [
+    { ico:'🐟', name:'开张营业', desc:'累计营收达到 500，触发第一次开罐头', cur:state.totalRevenue, need:500, reward:'五猫吃罐头' },
+    { ico:'💎', name:'钻石富翁', desc:'累计获得 1000 钻石', cur:state.points, need:1000, reward:'神秘奖励' },
+    { ico:'🐱', name:'猫咪伙伴', desc:'与任意小猫好感度达到满格', cur:Math.max(...Object.values(state.catAffections)), need:100, reward:'相册合影' },
+    { ico:'🎴', name:'卡牌收藏家', desc:'收集 10 张不同卡牌', cur:state.backpack.length, need:10, reward:'限定饰品' },
+  ];
+  const list = $('sideQuestList');
+  list.innerHTML = '';
+  quests.forEach(q => {
+    const done = q.cur >= q.need;
+    const el = document.createElement('div');
+    el.className = 'task-item' + (done ? ' done' : '');
+    el.innerHTML = `
+      <span class="ti-ico">${q.ico}</span>
+      <div class="ti-info">
+        <div class="ti-name">${q.name}</div>
+        <div class="ti-desc">${q.desc}</div>
+        <div class="ti-progress">${Math.min(q.cur, q.need)}/${q.need}</div>
+      </div>
+      <span class="ti-reward">${q.reward}</span>
+      <span class="ti-state ${done ? 'claim' : 'locked'}">${done ? '✓ 达成' : '进行中'}</span>`;
+    list.appendChild(el);
+  });
+  $('sideQuestTip').textContent = '支线任务长期有效，达成后自动解锁对应奖励~';
+  openModal('sideQuestsModal');
+}
+
+// 渲染昨日经营结算报告
+function renderSettleReport() {
+  const rec = state.settleHistory[0];
+  if (!rec) return;
+  $('settleReportBody').innerHTML = `
+    <div class="sr-date">${rec.date}</div>
+    <div class="ledger-stats">
+      <div class="ledger-stat"><div class="ls-num">${rec.customers}</div><div class="ls-label">进店客人</div></div>
+      <div class="ledger-stat"><div class="ls-num">${rec.sales}</div><div class="ls-label">售出商品</div></div>
+      <div class="ledger-stat"><div class="ls-num">${rec.revenue}</div><div class="ls-label">昨日营收</div></div>
+    </div>
+    <div class="sr-note">昨日营收已自动存入账本，今日从零开始经营吧~</div>`;
+  openModal('settleReportModal');
+}
+
+// 欢迎回来：离线收益结算
+function showWelcomeBack(coins, minutes) {
+  $('wbText').textContent = `你离开了 ${formatAwayTime(minutes)}，店里的猫咪们替你照看了店铺~`;
+  $('wbGain').textContent = `离线经营收入 +${coins} 🪙`;
+  openModal('welcomeBackModal');
+}
+
+function formatAwayTime(mins) {
+  if (mins < 60) return `${mins} 分钟`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h} 小时 ${mins % 60} 分钟`;
+  return `${Math.floor(h / 24)} 天 ${h % 24} 小时`;
+}
+
+// ============================================================
+// 14. EDIT CARD
+// ============================================================
+let editingCard = null;
+
+function openEditModal(category, id) {
+  const card = DEFAULT_CARDS[category].find(c => c.id === id);
+  if (!card) return;
+  editingCard = { category, id, ...card };
+  const cfg = state.cardConfigs[`${category}_${id}`] || {};
+  const image = cfg.image || getCardImage({ ...card, category });
+  $('editTitle').textContent = `编辑 · ${card.name}`;
+  $('editPreview').src = image;
+  $('editPreview').style.filter = cfg.image ? '' : getCardFilter({ ...card, category });
+  $('editName').value = cfg.customName || card.name;
+  $('editLabel').value = cfg.customLabel || card.label;
+  $('editDesc').value = cfg.customDesc || card.quote;
+  openModal('editModal');
+}
+
+function saveCardConfig() {
+  if (!editingCard) return;
+  const key = `${editingCard.category}_${editingCard.id}`;
+  if (!state.cardConfigs[key]) state.cardConfigs[key] = { image:'', customName:'', customLabel:'', customDesc:'' };
+  state.cardConfigs[key].customName = $('editName').value.trim();
+  state.cardConfigs[key].customLabel = $('editLabel').value.trim();
+  state.cardConfigs[key].customDesc = $('editDesc').value.trim();
+  saveState();
+  showToast('已保存');
+  closeModal('editModal');
+  renderBackpack();
+  renderCatModalEquips();
+  renderCats();
+}
+
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 500 * 1024) { showToast('图片太大，请选择小于 500KB 的图片'); return; }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    $('editPreview').src = ev.target.result;
+    $('editPreview').style.filter = '';
+    if (editingCard) {
+      const key = `${editingCard.category}_${editingCard.id}`;
+      if (!state.cardConfigs[key]) state.cardConfigs[key] = { image:'', customName:'', customLabel:'', customDesc:'' };
+      state.cardConfigs[key].image = ev.target.result;
+      saveState();
+      showToast('图片已上传');
+      renderBackpack();
+      renderCatModalEquips();
+      renderCats();
+    }
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function resetCard() {
+  if (!editingCard) return;
+  const key = `${editingCard.category}_${editingCard.id}`;
+  if (state.cardConfigs[key]) {
+    state.cardConfigs[key] = { image:'', customName:'', customLabel:'', customDesc:'' };
+    saveState();
+  }
+  $('editPreview').src = getCardImage({ ...editingCard, category: editingCard.category });
+  $('editPreview').style.filter = getCardFilter({ ...editingCard, category: editingCard.category });
+  $('editName').value = editingCard.name;
+  $('editLabel').value = editingCard.label;
+  $('editDesc').value = editingCard.quote;
+  showToast('已恢复默认');
+  renderBackpack();
+  renderCatModalEquips();
+  renderCats();
+}
+
+// ============================================================
+// 15. AUDIO ENGINE (Web Audio 程序化音效，无需音频文件)
+// ============================================================
+const AudioEngine = {
+  ctx: null,
+  master: null,
+  musicGain: null,
+  sfxGain: null,
+  enabled: false,  // 初始关闭，首次点击才开启（浏览器自动播放策略）
+  musicTimer: null,
+  inited: false,
+  currentScene: 'street',
+  // 场景音阶（五声音阶，治愈感）
+  scales: {
+    street:     [261.63, 293.66, 329.63, 392.00, 440.00],  // C大调 悠闲
+    supplyScene:[329.63, 369.99, 392.00, 440.00, 493.88],  // E大调 轻快
+    accessoryScene: [293.66, 329.63, 349.23, 392.00, 440.00], // D大调 明亮
+    bakeryScene: [392.00, 440.00, 493.88, 587.33, 659.25], // G大调 温暖
+    cafeScene:   [349.23, 392.00, 440.00, 523.25, 587.33], // F大调 舒缓
+  },
+  init() {
+    if (this.ctx) {
+      // 已存在但被挂起（iOS/微信），尝试恢复
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      return;
+    }
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.5;
+      this.master.connect(this.ctx.destination);
+      this.musicGain = this.ctx.createGain();
+      this.musicGain.gain.value = 0.35;
+      this.musicGain.connect(this.master);
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = 0.6;
+      this.sfxGain.connect(this.master);
+      this.inited = true;
+      // iOS/微信：创建后立即尝试恢复（若在用户手势中则成功）
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    } catch(e) { this.enabled = false; this.inited = false; }
+  },
+  // 播放一个音符
+  tone(freq, dur, type='sine', gainNode, vol=1, delay=0) {
+    if (!this.ctx || !this.enabled) return;
+    // 若上下文被挂起（iOS/微信），尝试恢复后继续
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    const t = this.ctx.currentTime + delay;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(g);
+    g.connect(gainNode || this.sfxGain);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  },
+  // 场景背景音乐：随机弹奏五声音阶
+  startMusic(sceneId) {
+    this.currentScene = sceneId;
+    if (!this.ctx || !this.enabled) return;
+    if (this.musicTimer) clearInterval(this.musicTimer);
+    const scale = this.scales[sceneId] || this.scales.street;
+    const playNote = () => {
+      if (!this.enabled) return;
+      const freq = scale[Math.floor(Math.random() * scale.length)];
+      this.tone(freq, 1.2, 'sine', this.musicGain, 0.18);
+      // 偶尔加一个低音
+      if (Math.random() < 0.3) {
+        this.tone(freq / 2, 1.5, 'triangle', this.musicGain, 0.1);
+      }
+    };
+    playNote();
+    this.musicTimer = setInterval(playNote, 1400 + Math.random() * 800);
+  },
+  stopMusic() {
+    if (this.musicTimer) { clearInterval(this.musicTimer); this.musicTimer = null; }
+  },
+  // 音效
+  sfxPet()    { this.tone(520, 0.15, 'sine', null, 0.5); this.tone(660, 0.12, 'sine', null, 0.4, 0.08); },
+  sfxTalk()   { this.tone(440, 0.1, 'triangle', null, 0.35); },
+  sfxBuy()    { this.tone(880, 0.1, 'sine', null, 0.5); this.tone(1320, 0.15, 'sine', null, 0.4, 0.06); },
+  sfxUse()    { this.tone(600, 0.12, 'sine', null, 0.5); this.tone(800, 0.12, 'sine', null, 0.4, 0.08); this.tone(1000, 0.15, 'sine', null, 0.3, 0.16); },
+  sfxGacha()  { this.tone(523, 0.1, 'sine', null, 0.5); this.tone(659, 0.1, 'sine', null, 0.5, 0.08); this.tone(784, 0.1, 'sine', null, 0.5, 0.16); this.tone(1047, 0.2, 'sine', null, 0.5, 0.24); },
+  sfxCan()    { this.tone(392, 0.2, 'triangle', null, 0.6); this.tone(523, 0.2, 'triangle', null, 0.5, 0.15); this.tone(659, 0.3, 'triangle', null, 0.5, 0.3); },
+  sfxDiamond(){ this.tone(1318, 0.2, 'sine', null, 0.6); this.tone(1760, 0.3, 'sine', null, 0.5, 0.1); },
+  sfxKick()   { this.tone(200, 0.3, 'sawtooth', null, 0.5); this.tone(150, 0.4, 'sawtooth', null, 0.4, 0.15); },
+  toggle() {
+    // 首次点击：初始化并开启音乐（浏览器自动播放策略要求用户手势）
+    if (!this.ctx) this.init();
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    this.enabled = !this.enabled;
+    const btn = $('musicToggle');
+    if (btn) {
+      btn.classList.toggle('off', !this.enabled);
+      btn.textContent = this.enabled ? '🎵' : '🔇';
+    }
+    if (this.enabled) {
+      this.startMusic(this.currentScene);
+    } else {
+      this.stopMusic();
+    }
+    return this.enabled;
+  },
+};
+
+// ============================================================
+// 16. INIT
+// ============================================================
+// 装修等级：已摆放家具数→客单价加成（全局，供 spawnNpcCustomer 调用）
+const DECOR_LEVELS = { 0:1, 3:1.2, 6:1.5, 10:2 };
+function getPlacedCount() {
+  let n = 0;
+  ['street','supply','accessory'].forEach(k => { n += (state.furniturePlaced[k] || []).length; });
+  return n;
+}
+function getDecorLevel() {
+  const count = getPlacedCount();
+  let lv = 0;
+  Object.keys(DECOR_LEVELS).forEach(k => { if (count >= +k) lv = +k; });
+  return lv;
+}
+function getDecorBonus() { return DECOR_LEVELS[getDecorLevel()] || 1; }
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadState();
+
+  // 预加载背景图 + 淡入
+  const bgEls = document.querySelectorAll('.scene-bg');
+  bgEls.forEach(el => {
+    const bg = getComputedStyle(el).backgroundImage;
+    if (bg && bg !== 'none') {
+      const url = bg.replace(/^url\(["']?|["']?\)$/g, '');
+      const img = new Image();
+      img.onload = () => el.classList.add('loaded');
+      img.onerror = () => el.classList.add('loaded'); // 加载失败也显示
+      img.src = url;
+    } else {
+      el.classList.add('loaded');
+    }
+  });
+
+  renderStreetCats();
+  renderCats();
+  renderShop('supplyGrid', SUPPLY_ITEMS);
+  renderShop('shopGrid', SUPPLY_ITEMS);
+  renderBackpack();  updateAllPoints();
+  updateCanProgress();
+  applyShopNames();
+  // 新手礼包：绑定街道横幅按钮 + 隐藏已领取状态
+  (function initNewbie() {
+    const btn = $('btnNewbie');
+    if (state.newbieClaimed) {
+      if (btn) btn.style.display = 'none';
+      const badge = $('fnNewbieBadge');
+      if (badge) badge.style.display = 'none';
+    }
+    if (btn) btn.addEventListener('click', claimNewbieGift);
+  })();
+
+  // 签到浮窗（游戏画面已渲染，浮窗叠加其上）
+  initCheckin();
+
+  // 营收等级显示 + 新店渲染
+  updateRevenueLevelDisplay();
+  renderStreetShops();
+
+  // 成就：初始化时补发历史可解锁成就
+  if (!state.achievements) state.achievements = {};
+  if (!state.petAllToday) state.petAllToday = {};
+  checkAchievements();
+
+  // Scene switching
+  $('doorSupply').addEventListener('click', () => { switchScene('supplyScene'); renderPlacedFurniture('supplyScene'); });
+  $('doorAccessory').addEventListener('click', () => { switchScene('accessoryScene'); renderPlacedFurniture('accessoryScene'); });
+  $('btnBackSupply').addEventListener('click', () => { closeAllModals(); switchScene('streetScene'); renderPlacedFurniture('streetScene'); });
+  $('btnBackAccessory').addEventListener('click', () => { closeAllModals(); switchScene('streetScene'); renderPlacedFurniture('streetScene'); });
+
+  // Supply shop
+  $('btnOpenSupplyShop').addEventListener('click', () => { renderShop('supplyGrid', SUPPLY_ITEMS); openModal('supplyShopModal'); });
+  $('supplyShopModalClose').addEventListener('click', () => closeModal('supplyShopModal'));
+  $('supplyShopModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('supplyShopModal'); });
+  $('btnUseSupply').addEventListener('click', () => {
+    showToast('点击下方任意猫猫，即可给它使用用品~');
+  });
+  $('btnExpandSupply').addEventListener('click', () => openExpandModal('supply'));
+  $('btnExpandAccessory').addEventListener('click', () => openExpandModal('accessory'));
+
+  // 新店场景（面包店/咖啡店）
+  $('btnBackBakery').addEventListener('click', () => { closeAllModals(); switchScene('streetScene'); renderPlacedFurniture('streetScene'); });
+  $('btnBackCafe').addEventListener('click', () => { closeAllModals(); switchScene('streetScene'); renderPlacedFurniture('streetScene'); });
+  $('btnOpenBakeryShop').addEventListener('click', () => { renderShop('bakeryGrid', BAKERY_ITEMS); openModal('bakeryShopModal'); });
+  $('bakeryShopModalClose').addEventListener('click', () => closeModal('bakeryShopModal'));
+  $('bakeryShopModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('bakeryShopModal'); });
+  $('btnUseBakery').addEventListener('click', () => showToast('点击下方任意猫猫，即可给它投喂甜品~'));
+  $('btnExpandBakery').addEventListener('click', () => openExpandModal('bakery'));
+  $('btnOpenCafeShop').addEventListener('click', () => { renderShop('cafeGrid', CAFE_ITEMS); openModal('cafeShopModal'); });
+  $('cafeShopModalClose').addEventListener('click', () => closeModal('cafeShopModal'));
+  $('cafeShopModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('cafeShopModal'); });
+  $('btnUseCafe').addEventListener('click', () => showToast('点击下方任意猫猫，即可给它投喂饮品~'));
+  $('btnExpandCafe').addEventListener('click', () => openExpandModal('cafe'));
+
+  // Shop name editing (店铺改名)
+  document.querySelectorAll('.door-edit, .title-edit').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openShopNameEditor(btn.dataset.shop);
+    });
+  });
+  $('shopNameClose').addEventListener('click', () => closeModal('shopNameModal'));
+  $('shopNameCancel').addEventListener('click', () => closeModal('shopNameModal'));
+  $('shopNameSave').addEventListener('click', saveShopName);
+  $('shopNameModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('shopNameModal'); });
+  $('shopNameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') saveShopName(); });
+
+  // Cat modal
+  $('catModalClose').addEventListener('click', () => closeModal('catModal'));
+  $('btnCloseCat').addEventListener('click', () => closeModal('catModal'));
+  $('catModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('catModal'); });
+  $('btnPetCat').addEventListener('click', petCat);
+  $('btnTalkCat').addEventListener('click', talkCat);
+
+  // R37: 用品动画卡片
+  $('actClose').addEventListener('click', closeActivityCard);
+  $('activityOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeActivityCard(); });
+
+  // Accessory shop modals
+  $('btnShop').addEventListener('click', () => { renderShop('shopGrid', SUPPLY_ITEMS); openModal('shopModal'); });
+  $('shopModalClose').addEventListener('click', () => closeModal('shopModal'));
+  $('shopModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('shopModal'); });
+
+  $('btnGacha').addEventListener('click', () => openModal('gachaModal'));
+  $('gachaFloat').addEventListener('click', () => { closeAllModals(); openModal('gachaModal'); });
+  $('gachaModalClose').addEventListener('click', () => closeModal('gachaModal'));
+  $('gachaModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('gachaModal'); });
+  $('btnGachaSingle').addEventListener('click', doGachaSingle);
+  $('btnGachaMulti').addEventListener('click', doGachaMulti);
+
+  $('btnBackpack').addEventListener('click', () => { renderBackpack(); openModal('backpackModal'); });
+  $('backpackModalClose').addEventListener('click', () => closeModal('backpackModal'));
+  $('backpackModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('backpackModal'); });
+
+  // Album modal (相册)
+  $('albumModalClose').addEventListener('click', () => closeModal('albumModal'));
+  $('albumModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('albumModal'); });
+  $('albumViewClose').addEventListener('click', closeAlbumView);
+  $('albumView').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeAlbumView(); });
+  document.querySelectorAll('.album-filters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.album-filters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      bpFilter = btn.dataset.filter;
+      renderBackpack();
+    });
+  });
+
+  // Edit modal
+  $('editModalClose').addEventListener('click', () => closeModal('editModal'));
+  $('btnCancelEdit').addEventListener('click', () => closeModal('editModal'));
+  $('editModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('editModal'); });
+  $('btnSaveCard').addEventListener('click', saveCardConfig);
+  $('btnResetCard').addEventListener('click', resetCard);
+  $('fileInput').addEventListener('change', handleImageUpload);
+
+  // Reveal
+  $('revealBtn').addEventListener('click', closeReveal);
+
+  // Can event
+  $('canClose').addEventListener('click', closeCanEvent);
+
+  // Sale notice close
+  $('snClose').addEventListener('click', () => $('saleNotice').classList.remove('show'));
+
+  // Ledger modal (点击顶部营收徽章打开账本)
+  document.querySelectorAll('.revenue-pill').forEach(el => el.addEventListener('click', openLedger));
+  $('ledgerModalClose').addEventListener('click', () => closeModal('ledgerModal'));
+  $('ledgerModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('ledgerModal'); });
+
+  // Currency info modal (点击钻石/金币徽章显示获取途径)
+  document.querySelectorAll('.points-pill').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isDiamond = el.querySelector('.num').id.includes('Points');
+      openCurrencyInfo(isDiamond ? 'diamond' : 'coin');
+    });
+  });
+  $('currencyInfoClose').addEventListener('click', () => closeModal('currencyInfoModal'));
+  $('currencyInfoOk').addEventListener('click', () => closeModal('currencyInfoModal'));
+  $('currencyInfoModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('currencyInfoModal'); });
+
+  // Achievement modal (成就)
+  $('achModalClose').addEventListener('click', () => closeModal('achModal'));
+  $('achModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('achModal'); });
+
+  // Daily tasks modal (每日任务)
+  $('dailyTasksClose').addEventListener('click', () => closeModal('dailyTasksModal'));
+  $('dailyTasksModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('dailyTasksModal'); });
+
+  // Side quests modal (支线任务)
+  $('sideQuestsClose').addEventListener('click', () => closeModal('sideQuestsModal'));
+  $('sideQuestsModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal('sideQuestsModal'); });
+
+  // Welcome back modal (离线收益)
+  function closeWelcomeBack() { closeModal('welcomeBackModal'); }
+  $('welcomeBackClose').addEventListener('click', closeWelcomeBack);
+  $('wbBtn').addEventListener('click', closeWelcomeBack);
+  $('welcomeBackModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeWelcomeBack(); });
+
+  // Settlement report modal (昨日结算)
+  function closeSettleReport() { closeModal('settleReportModal'); }
+  $('settleReportClose').addEventListener('click', closeSettleReport);
+  $('settleReportBtn').addEventListener('click', closeSettleReport);
+  $('settleReportModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeSettleReport(); });
+
+  // 进入游戏：先弹昨日结算报告，再弹离线收益
+  if (pendingSettleReport) {
+    renderSettleReport();
+  }
+  const offline = computeOfflineRevenue();
+  if (offline.coins > 0) {
+    addCoins(offline.coins);
+    setTimeout(() => showWelcomeBack(offline.coins, offline.minutes), pendingSettleReport ? 900 : 300);
+  }
+
+  // NPC customers: 每 12-20 秒一位顾客
+  function scheduleNpc() {
+    const delay = 12000 + Math.random() * 8000;
+    setTimeout(() => {
+      spawnNpcCustomer();
+      scheduleNpc();
+    }, delay);
+  }
+  scheduleNpc();
+
+  // ===== 猫咪午休机制：在线3分钟触发30秒午休 =====
+  function startRestTimer() {
+    setTimeout(() => {
+      if (isResting) return;
+      triggerRestBreak();
+      startRestTimer();
+    }, 3 * 60 * 1000);
+  }
+  function triggerRestBreak() {
+    if (isResting) return;
+    isResting = true;
+    showToast('🐱 猫猫员工辛苦了，午休时间到~');
+    // 播放玩耍动画（3秒）：五只猫在门内自由玩耍
+    const restOverlay = document.createElement('div');
+    restOverlay.className = 'rest-overlay';
+    restOverlay.innerHTML = `
+      <div class="rest-card">
+        <div class="rest-title">😴 午休时间</div>
+        <div class="rest-play-area" id="restPlayArea">
+          <div class="rp-toy">🧶</div>
+          ${CATS.map((c, i) => `<img class="rp-cat rp-c${i}" src="${c.img}" alt="${c.name}">`).join('')}
+        </div>
+        <div class="rest-text">小猫们在店里自由玩耍中...</div>
+        <div class="rest-countdown" id="restCountdown">30</div>
+        <div class="rest-badge">⏸️ 午休期间暂停营业</div>
+        <button class="rest-skip" id="restSkip">⏩ 快速度过</button>
+      </div>`;
+    document.body.appendChild(restOverlay);
+    let restIv = null;
+    const endRest = () => {
+      if (restIv) clearInterval(restIv);
+      if (restOverlay.parentNode) restOverlay.parentNode.removeChild(restOverlay);
+      isResting = false;
+      showToast('☀️ 午休结束，猫猫们元气满满地开工啦！');
+    };
+    // 3秒玩耍动画后显示休息倒计时
+    setTimeout(() => {
+      const cd = $('restCountdown');
+      let left = 30;
+      restIv = setInterval(() => {
+        left--;
+        if (cd) cd.textContent = left;
+        if (left <= 0) { clearInterval(restIv); endRest(); }
+      }, 1000);
+      const skipBtn = $('restSkip');
+      if (skipBtn) skipBtn.addEventListener('click', endRest);
+    }, 3000);
+  }
+  startRestTimer();
+
+  // ===== App Tab Bar (底部导航) =====
+  function closeAllModals() {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+  function switchTab(tabId) {
+    document.querySelectorAll('.app-tabbar .tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.app-tabbar .tab[data-tab="${tabId}"]`).classList.add('active');
+    if (tabId === 'street') {
+      closeAllModals();
+      switchScene('streetScene');
+      renderPlacedFurniture('streetScene');
+    } else if (tabId === 'mall') {
+      closeAllModals();
+      renderMall();
+      switchScene('mallScene');
+    } else if (tabId === 'backpack') {
+      closeAllModals();
+      renderBackpack();
+      openModal('backpackModal');
+    } else if (tabId === 'album') {
+      closeAllModals();
+      renderAlbum();
+      openModal('albumModal');
+    }
+  }
+  document.querySelectorAll('.app-tabbar .tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+  });
+
+  // ===== Floating Nav (悬浮功能按钮) =====
+  document.querySelectorAll('.float-nav .fn-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'ledger') {
+        openLedger();
+      } else if (action === 'daily') {
+        openDailyTasks();
+      } else if (action === 'newbie') {
+        claimNewbieGift();
+      } else if (action === 'sidequest') {
+        openSideQuests();
+      } else if (action === 'achievement') {
+        renderAchievements();
+        openModal('achModal');
+      }
+    });
+  });
+
+  // ===== Mall Scene (商城：面向用户) =====
+  // 家具数据
+  const FURNITURE_ITEMS = [
+    { id:'frame',   name:'相框',   emoji:'🖼️', price:300, desc:'可放入合照' },
+    { id:'catTree', name:'猫爬架', emoji:'🐈', price:500, desc:'猫咪心情+2' },
+    { id:'flower',  name:'鲜花',   emoji:'💐', price:200, desc:'装饰美化' },
+    { id:'sign',    name:'招牌',   emoji:'🪧', price:400, desc:'吸引更多NPC' },
+    { id:'carpet',  name:'地毯',   emoji:'🧶', price:250, desc:'装饰美化' },
+    { id:'painting',name:'挂画',   emoji:'🖼️', price:350, desc:'装饰美化' },
+  ];
+
+  function renderMall() {
+    // 抽卡预览：展示28张卡
+    const allCards = getAllCards();
+    const ownedCount = allCards.filter(c => c.owned).length;
+    $('mallGachaPreview').innerHTML = `
+      <div class="mgp-label">🎴 可收集饰品 · 已集 ${ownedCount}/${allCards.length}</div>
+      ${allCards.map(c => `
+      <div class="mgp-card"><img src="${c.image}" alt="${c.name}" style="filter:${c.isCustom ? '' : getCardFilter(c)}"></div>`).join('')}`;
+    // 猫用品
+    $('mallSuppliesGrid').innerHTML = SUPPLY_ITEMS.map(it => `
+      <div class="mall-grid-item">
+        <div class="mgi-ico">${it.emoji}</div>
+        <div class="mgi-name">${it.name}</div>
+        <div class="mgi-price">${it.price}🪙 · 心情+${it.mood}</div>
+        <button class="mgi-btn" onclick="buySupplyFromMall('${it.id}')">购买</button>
+      </div>`).join('');
+    // 家具
+    $('mallFurnitureGrid').innerHTML = FURNITURE_ITEMS.map(f => {
+      const owned = (state.furniture || {})[f.id] || 0;
+      return `
+      <div class="mall-grid-item">
+        <div class="mgi-ico">${f.emoji}</div>
+        <div class="mgi-name">${f.name}</div>
+        <div class="mgi-price">${f.price}🪙 · ${f.desc}${owned ? ` · 已购×${owned}` : ''}</div>
+        <button class="mgi-btn" onclick="buyFurniture('${f.id}')">${owned ? '再买一件' : '购买'}</button>
+      </div>`;
+    }).join('');
+  }
+
+  // 从商城购买猫用品
+  function buySupplyFromMall(id) {
+    const it = SUPPLY_ITEMS.find(s => s.id === id);
+    if (!it) return;
+    if (state.coins < it.price) { showToast(`金币不够，需要 ${it.price}🪙`); return; }
+    state.coins -= it.price;
+    state.inventory[id] = (state.inventory[id] || 0) + 1;
+    saveState(); updateAllPoints();
+    showToast(`已购买 ${it.emoji} ${it.name} ×1`);
+  }
+  // 购买家具
+  function buyFurniture(id) {
+    const f = FURNITURE_ITEMS.find(x => x.id === id);
+    if (!f) return;
+    if (state.coins < f.price) { showToast(`金币不够，需要 ${f.price}🪙`); return; }
+    state.coins -= f.price;
+    state.furniture = state.furniture || {};
+    state.furniture[id] = (state.furniture[id] || 0) + 1;
+    saveState(); updateAllPoints();
+    const newBonus = getDecorBonus();
+    showToast(`已购买 ${f.emoji} ${f.name}！装修加成 ×${newBonus}`);
+  }
+  // 暴露给全局（商城按钮使用 onclick 调用）
+  window.buySupplyFromMall = buySupplyFromMall;
+  window.buyFurniture = buyFurniture;
+
+  // ===== 家具摆放系统（拖拽装饰到店里） =====
+  const FURNITURE_EMOJI = { frame:'🖼️', catTree:'🐈', flower:'💐', sign:'🪧', carpet:'🧶', painting:'🖼️' };
+  let placement = { active:false, fid:null };   // 摆放模式
+  let selectedFurniture = null;                 // 当前选中的家具 {sceneId, idx, el}
+  let draggingFurniture = null;                 // 拖拽中的家具 {sceneId, idx, el, dx, dy}
+
+  function getSceneKey(sceneId) {
+    if (sceneId === 'supplyScene') return 'supply';
+    if (sceneId === 'accessoryScene') return 'accessory';
+    return 'street';
+  }
+  function getFurnitureLayer(sceneId) {
+    const key = getSceneKey(sceneId);
+    return document.getElementById('furnitureLayer' + (key === 'street' ? 'Street' : key === 'supply' ? 'Supply' : 'Accessory'));
+  }
+
+  // 渲染某场景已摆放的家具
+  function renderPlacedFurniture(sceneId) {
+    const key = getSceneKey(sceneId);
+    const layer = getFurnitureLayer(sceneId);
+    if (!layer) return;
+    layer.innerHTML = '';
+    (state.furniturePlaced[key] || []).forEach((p, idx) => {
+      const f = FURNITURE_ITEMS.find(x => x.id === p.id);
+      if (!f) return;
+      const el = document.createElement('div');
+      el.className = `furniture-item fi-${p.id}`;
+      el.style.left = p.x + '%';
+      el.style.top = p.y + '%';
+      if (p.id === 'frame') {
+        const photo = ALBUM_PHOTOS.find(a => a.img);
+        el.innerHTML = `<div class="fi-photo">${photo ? `<img src="${photo.img}" alt="合照">` : ''}</div>`;
+      } else {
+        el.textContent = f.emoji;
+      }
+      el.addEventListener('click', (e) => { e.stopPropagation(); selectFurniture(sceneId, idx, el); });
+      layer.appendChild(el);
+    });
+  }
+
+  // 选中家具：弹出操作条（移动/收起）
+  function selectFurniture(sceneId, idx, el) {
+    if (placement.active) return;
+    clearFurnitureSelection();
+    selectedFurniture = { sceneId, idx, el };
+    el.classList.add('moving');
+    const tb = document.getElementById('furnitureToolbar' + (getSceneKey(sceneId) === 'street' ? 'Street' : getSceneKey(sceneId) === 'supply' ? 'Supply' : 'Accessory'));
+    if (tb) {
+      tb.style.display = 'flex';
+      tb.innerHTML = `
+        <button class="ft-btn ft-primary" id="ftMove">✋ 移动</button>
+        <button class="ft-btn ft-danger" id="ftRemove">🗑️ 收起</button>
+        <button class="ft-btn" id="ftCancel">取消</button>`;
+      $('ftMove').addEventListener('click', () => { hideFurnitureToolbar(); beginDragFurniture(sceneId, idx, el); });
+      $('ftRemove').addEventListener('click', () => removeFurniture(sceneId, idx));
+      $('ftCancel').addEventListener('click', () => { clearFurnitureSelection(); hideFurnitureToolbar(); });
+    }
+  }
+  function clearFurnitureSelection() {
+    if (selectedFurniture) selectedFurniture.el.classList.remove('moving');
+    selectedFurniture = null;
+  }
+  function hideFurnitureToolbar() {
+    ['Street','Supply','Accessory'].forEach(k => {
+      const tb = document.getElementById('furnitureToolbar' + k);
+      if (tb) tb.style.display = 'none';
+    });
+  }
+
+  // 拖拽移动家具
+  function beginDragFurniture(sceneId, idx, el) {
+    if (draggingFurniture) return;
+    clearFurnitureSelection(); hideFurnitureToolbar();
+    draggingFurniture = { sceneId, idx, el };
+    el.classList.add('moving');
+    showToast('拖动调整位置，松手完成');
+  }
+  function endDragFurniture(sceneId, idx, el, clientX, clientY) {
+    if (!draggingFurniture) return;
+    draggingFurniture = null;
+    const scene = document.getElementById(sceneId);
+    const rect = scene.getBoundingClientRect();
+    let x = Math.round((clientX - rect.left) / rect.width * 100);
+    let y = Math.round((clientY - rect.top) / rect.height * 100);
+    x = Math.max(8, Math.min(92, x));
+    y = Math.max(12, Math.min(88, y));
+    const key = getSceneKey(sceneId);
+    const list = state.furniturePlaced[key] || [];
+    if (list[idx]) { list[idx].x = x; list[idx].y = y; }
+    saveState();
+    renderPlacedFurniture(sceneId);
+    showToast('家具已移动到位');
+  }
+
+  // 收起家具（归还库存）
+  function removeFurniture(sceneId, idx) {
+    const key = getSceneKey(sceneId);
+    const list = state.furniturePlaced[key] || [];
+    const p = list[idx];
+    if (!p) return;
+    list.splice(idx, 1);
+    state.furniture = state.furniture || {};
+    state.furniture[p.id] = (state.furniture[p.id] || 0) + 1;
+    saveState(); updateAllPoints();
+    renderPlacedFurniture(sceneId);
+    hideFurnitureToolbar();
+    showToast('已收起家具，可再次摆放');
+  }
+
+  // 进入摆放模式
+  function enterPlacementMode(fid) {
+    if (placement.active) return;
+    placement = { active:true, fid };
+    switchScene('streetScene');
+    renderPlacedFurniture('streetScene');
+    const hint = document.createElement('div');
+    hint.className = 'placement-hint';
+    hint.id = 'placementHint';
+    hint.innerHTML = `点击店铺任意位置摆放 <button class="ph-cancel" id="phCancel">取消</button>`;
+    document.getElementById('streetScene').appendChild(hint);
+    $('phCancel').addEventListener('click', exitPlacementMode);
+    const tb = $('furnitureToolbarStreet');
+    tb.style.display = 'flex';
+    tb.innerHTML = `<button class="ft-btn ft-primary" id="ftDone">✅ 完成摆放</button>`;
+    $('ftDone').addEventListener('click', exitPlacementMode);
+    showToast('点击店铺内任意位置摆放家具');
+  }
+  function exitPlacementMode() {
+    if (!placement.active) return;
+    placement.active = false;
+    const hint = $('placementHint'); if (hint) hint.remove();
+    hideFurnitureToolbar();
+    showToast('摆放完成，装修度 +1');
+  }
+
+  // 摆放模式下点击场景放置家具
+  function handleSceneTapForPlacement(sceneId, e) {
+    if (!placement.active) return;
+    const scene = document.getElementById(sceneId);
+    const rect = scene.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    const x = Math.round((t.clientX - rect.left) / rect.width * 100);
+    const y = Math.round((t.clientY - rect.top) / rect.height * 100);
+    const key = getSceneKey(sceneId);
+    state.furniturePlaced[key] = state.furniturePlaced[key] || [];
+    state.furniturePlaced[key].push({ id: placement.fid, x, y });
+    saveState(); updateAllPoints();
+    renderPlacedFurniture(sceneId);
+    showToast('家具已摆放！装修度 +1');
+  }
+
+  // 场景点击：摆放模式放置 / 拖拽松手
+  ['streetScene','supplyScene','accessoryScene'].forEach(sceneId => {
+    const scene = document.getElementById(sceneId);
+    if (!scene) return;
+    scene.addEventListener('click', (e) => {
+      if (draggingFurniture) {
+        endDragFurniture(draggingFurniture.sceneId, draggingFurniture.idx, draggingFurniture.el, e.clientX, e.clientY);
+        return;
+      }
+      handleSceneTapForPlacement(sceneId, e);
+    });
+    // 触摸拖拽：长按家具后拖动
+    scene.addEventListener('touchmove', (e) => {
+      if (!draggingFurniture) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      const el = draggingFurniture.el;
+      const sceneEl = document.getElementById(draggingFurniture.sceneId);
+      const rect = sceneEl.getBoundingClientRect();
+      el.style.left = Math.max(8, Math.min(92, (t.clientX - rect.left) / rect.width * 100)) + '%';
+      el.style.top = Math.max(12, Math.min(88, (t.clientY - rect.top) / rect.height * 100)) + '%';
+    }, {passive:false});
+    scene.addEventListener('touchend', (e) => {
+      if (!draggingFurniture) return;
+      const t = e.changedTouches[0];
+      endDragFurniture(draggingFurniture.sceneId, draggingFurniture.idx, draggingFurniture.el, t.clientX, t.clientY);
+    });
+    // 鼠标拖拽
+    scene.addEventListener('mousemove', (e) => {
+      if (!draggingFurniture) return;
+      const el = draggingFurniture.el;
+      const sceneEl = document.getElementById(draggingFurniture.sceneId);
+      const rect = sceneEl.getBoundingClientRect();
+      el.style.left = Math.max(8, Math.min(92, (e.clientX - rect.left) / rect.width * 100)) + '%';
+      el.style.top = Math.max(12, Math.min(88, (e.clientY - rect.top) / rect.height * 100)) + '%';
+    });
+    scene.addEventListener('mouseup', (e) => {
+      if (!draggingFurniture) return;
+      endDragFurniture(draggingFurniture.sceneId, draggingFurniture.idx, draggingFurniture.el, e.clientX, e.clientY);
+    });
+  });
+
+  // 商城「去店里摆放」按钮
+  $('mallGoPlace').addEventListener('click', () => {
+    const owned = Object.keys(state.furniture || {}).filter(k => state.furniture[k] > 0);
+    if (owned.length === 0) { showToast('还没有家具，先去购买一件吧~'); return; }
+    enterPlacementMode(owned[0]);
+  });
+
+  // 初始渲染已摆放家具
+  renderPlacedFurniture('streetScene');
+
+  document.querySelectorAll('.mall-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.mall-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.mall-panel').forEach(p => p.classList.remove('active'));
+      const mtab = tab.dataset.mtab;
+      if (mtab === 'gacha') $('mallPanelGacha').classList.add('active');
+      else if (mtab === 'supplies') $('mallPanelSupplies').classList.add('active');
+      else if (mtab === 'furniture') $('mallPanelFurniture').classList.add('active');
+    });
+  });
+  $('mallGachaSingle').addEventListener('click', () => { closeAllModals(); doGachaSingle(); });
+  $('mallGachaMulti').addEventListener('click', () => { closeAllModals(); doGachaMulti(); });
+
+  // 音乐开关：首次点击开启（浏览器自动播放策略），再点静音
+  $('musicToggle').addEventListener('click', () => AudioEngine.toggle());
+
+  // 全局用户手势解锁音频（iOS/微信要求 resume 必须在手势中）
+  // 首次交互自动开启背景音乐，让玩家一进店就有声音
+  let audioUnlocked = false;
+  const unlockAudio = () => {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    AudioEngine.init();
+    if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
+    // 首次交互自动开启音乐（若用户尚未手动切换）
+    if (!AudioEngine.enabled) {
+      AudioEngine.enabled = true;
+      AudioEngine.startMusic('street');
+      const btn = $('musicToggle');
+      if (btn) { btn.classList.remove('off'); btn.textContent = '🎵'; }
+    }
+    document.removeEventListener('touchstart', unlockAudio);
+    document.removeEventListener('click', unlockAudio);
+  };
+  document.addEventListener('touchstart', unlockAudio);
+  document.addEventListener('click', unlockAudio);
+});
+</script>
+</body>
+</html>
